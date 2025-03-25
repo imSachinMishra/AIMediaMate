@@ -1,8 +1,10 @@
 import { users, favorites, type User, type InsertUser, type Favorite, type InsertFavorite } from "@shared/schema";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
+import connectPg from "connect-pg-simple";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -12,78 +14,61 @@ export interface IStorage {
   getFavorite(userId: number, tmdbId: number): Promise<Favorite | undefined>;
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
   removeFavorite(userId: number, tmdbId: number): Promise<void>;
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private favorites: Map<number, Favorite>;
-  sessionStore: session.SessionStore;
-  currentUserId: number;
-  currentFavoriteId: number;
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
 
   constructor() {
-    this.users = new Map();
-    this.favorites = new Map();
-    this.currentUserId = 1;
-    this.currentFavoriteId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const now = new Date();
-    const user: User = { 
-      ...insertUser, 
-      id,
-      createdAt: now
-    };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getFavorites(userId: number): Promise<Favorite[]> {
-    return Array.from(this.favorites.values()).filter(
-      (favorite) => favorite.userId === userId,
-    );
+    return await db.select().from(favorites).where(eq(favorites.userId, userId));
   }
 
   async getFavorite(userId: number, tmdbId: number): Promise<Favorite | undefined> {
-    return Array.from(this.favorites.values()).find(
-      (favorite) => favorite.userId === userId && favorite.tmdbId === tmdbId,
+    const [favorite] = await db.select().from(favorites).where(
+      and(
+        eq(favorites.userId, userId),
+        eq(favorites.tmdbId, tmdbId)
+      )
     );
+    return favorite;
   }
 
   async addFavorite(insertFavorite: InsertFavorite): Promise<Favorite> {
-    const id = this.currentFavoriteId++;
-    const now = new Date();
-    const favorite: Favorite = {
-      ...insertFavorite,
-      id,
-      createdAt: now
-    };
-    this.favorites.set(id, favorite);
+    const [favorite] = await db.insert(favorites).values(insertFavorite).returning();
     return favorite;
   }
 
   async removeFavorite(userId: number, tmdbId: number): Promise<void> {
-    const favorite = await this.getFavorite(userId, tmdbId);
-    if (favorite) {
-      this.favorites.delete(favorite.id);
-    }
+    await db.delete(favorites).where(
+      and(
+        eq(favorites.userId, userId),
+        eq(favorites.tmdbId, tmdbId)
+      )
+    );
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
