@@ -3,15 +3,15 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import MovieCard from "@/components/MovieCard";
-import MovieCardSkeleton from "@/components/MovieCardSkeleton";
 import { Movie } from "@/types/movie";
-import { Info, SearchIcon, X } from "lucide-react";
+import { Info, Loader2, SearchIcon, Sparkles, X } from "lucide-react";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { mapMovieData } from "@/lib/utils";
 
 export default function RecommendationsPage() {
@@ -20,13 +20,12 @@ export default function RecommendationsPage() {
   const [recommendations, setRecommendations] = useState<Movie[]>([]);
   const [aiRecommendations, setAiRecommendations] = useState<(Movie & { ai_reason?: string })[]>([]);
   const [description, setDescription] = useState("");
-  const [activeTab, setActiveTab] = useState("ai");
+  const [activeTab, setActiveTab] = useState("ai");  // Start with AI tab active
   const [isSearching, setIsSearching] = useState(false);
 
   // Fetch genre data for mapping
-  const { data: genresData } = useQuery({
+  const { data: genresData } = useQuery<{ genres: any[] }>({
     queryKey: ['/api/genres/movie'],
-    queryFn: getQueryFn(),
   });
 
   // Create a genre map for quick lookups
@@ -38,16 +37,15 @@ export default function RecommendationsPage() {
   }
 
   // Fetch algorithm-based recommendations
-  const { data: recommendedMovies, isLoading } = useQuery({
+  const { data: recommendedMovies, isLoading } = useQuery<any>({
     queryKey: ["/api/recommendations"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user,
   });
 
   // Fetch user favorites to mark favorite movies
-  const { data: favorites } = useQuery({
+  const { data: favorites } = useQuery<any[]>({
     queryKey: ['/api/favorites'],
-    queryFn: getQueryFn(),
   });
 
   // AI recommendation mutation
@@ -58,9 +56,10 @@ export default function RecommendationsPage() {
     },
     onSuccess: (data) => {
       if (data.results && data.results.length > 0) {
+        // Process AI recommendations with proper genre mapping
         const movies = data.results.map((movie: any) => {
           const mediaType = movie.media_type || (movie.first_air_date ? 'tv' : 'movie');
-          const mappedMovie = mapMovieData(movie, favorites || [], mediaType, genreMap);
+          const mappedMovie = mapMovieData(movie, favorites, mediaType, genreMap);
           return {
             ...mappedMovie,
             ai_reason: movie.ai_reason
@@ -69,7 +68,7 @@ export default function RecommendationsPage() {
         setAiRecommendations(movies);
         setActiveTab("ai");
         setIsSearching(false);
-
+        
         toast({
           title: "AI Recommendations Ready",
           description: `Found ${movies.length} movies matching your description`,
@@ -87,7 +86,7 @@ export default function RecommendationsPage() {
       console.error("Error getting AI recommendations:", error);
       toast({
         title: "Error",
-        description: "Failed to get AI recommendations",
+        description: "Failed to get AI recommendations. Please check if the OpenAI API key is valid.",
         variant: "destructive",
       });
       setIsSearching(false);
@@ -104,13 +103,13 @@ export default function RecommendationsPage() {
       });
       return;
     }
-
+    
     setIsSearching(true);
     aiRecommendMutation.mutate(description);
   };
 
   useEffect(() => {
-    if (recommendedMovies?.results && favorites) {
+    if (recommendedMovies && recommendedMovies.results) {
       const movies = recommendedMovies.results.map((movie: any) => {
         const mediaType = movie.media_type || (movie.first_air_date ? 'tv' : 'movie');
         return mapMovieData(movie, favorites, mediaType, genreMap);
@@ -130,13 +129,22 @@ export default function RecommendationsPage() {
           />
 
           <div className="mb-8 mt-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="algo">Algorithm-based</TabsTrigger>
                 <TabsTrigger value="ai">AI-powered</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="algo">
+              <TabsContent value="algo" className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle>Algorithm Recommendations</CardTitle>
+                    <CardDescription>
+                      Based on your favorites and viewing history
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+
                 {isLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-8">
                     {[...Array(10)].map((_, i) => (
@@ -160,25 +168,53 @@ export default function RecommendationsPage() {
                 )}
               </TabsContent>
 
-              <TabsContent value="ai">
-                <div className="flex gap-4 mb-8">
-                  <Input
-                    placeholder="Describe what you're looking for (e.g., 'Sci-fi movies with plot twists')"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAiSearch()}
-                  />
-                  <Button onClick={handleAiSearch} disabled={isSearching}>
-                    {isSearching ? (
-                      <>Searching...</>
-                    ) : (
-                      <>Search</>
-                    )}
-                  </Button>
-                </div>
+              <TabsContent value="ai" className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle>AI Recommendations</CardTitle>
+                    <CardDescription>
+                      Describe what you're looking for and our AI will find matches
+                    </CardDescription>
+                    
+                    <div className="flex gap-2 mt-4">
+                      <div className="relative flex-1">
+                        <Input
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="e.g., Science fiction movies with time travel themes..."
+                          className="pr-8"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleAiSearch();
+                            }
+                          }}
+                        />
+                        {description && (
+                          <button 
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            onClick={() => setDescription('')}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      <Button 
+                        onClick={handleAiSearch} 
+                        disabled={isSearching || !description.trim()}
+                      >
+                        {isSearching ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 mr-2" />
+                        )}
+                        Find Matches
+                      </Button>
+                    </div>
+                  </CardHeader>
+                </Card>
 
                 {isSearching ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-8">
                     {[...Array(5)].map((_, i) => (
                       <MovieCardSkeleton key={i} />
                     ))}
@@ -201,7 +237,9 @@ export default function RecommendationsPage() {
                     <SearchIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-xl font-semibold mb-2">Describe what you're looking for</h3>
                     <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                      Tell us about the type of content you want to watch and our AI will find the best matches
+                      Enter a description of your ideal movie or TV show, and our AI will find the best matches for you.
+                      <br /><br />
+                      Try describing genres, themes, plot elements, or the mood you're looking for.
                     </p>
                   </div>
                 )}
