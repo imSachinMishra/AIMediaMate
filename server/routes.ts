@@ -238,7 +238,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return {
               id: fav.tmdbId,
               mediaType: fav.mediaType,
-              title: fav.title,
+              title: fav.mediaType === 'movie' ? 'Movie' : 'TV Show',
+              name: fav.mediaType === 'tv' ? 'TV Show' : undefined,
               isFavorite: true
             };
           }

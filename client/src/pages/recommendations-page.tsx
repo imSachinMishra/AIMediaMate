@@ -13,15 +13,19 @@ export default function RecommendationsPage() {
   const [recommendations, setRecommendations] = useState<Movie[]>([]);
 
   // Fetch recommendations
-  const { data: recommendedMovies, isLoading } = useQuery({
+  const { data: recommendedMovies, isLoading } = useQuery<any>({
     queryKey: ["/api/recommendations"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user,
   });
 
   useEffect(() => {
-    if (recommendedMovies) {
-      setRecommendations(recommendedMovies);
+    if (recommendedMovies && recommendedMovies.results) {
+      const movies = recommendedMovies.results.map((movie: any) => ({
+        ...movie,
+        mediaType: movie.media_type || (movie.first_air_date ? 'tv' : 'movie')
+      }));
+      setRecommendations(movies);
     }
   }, [recommendedMovies]);
 

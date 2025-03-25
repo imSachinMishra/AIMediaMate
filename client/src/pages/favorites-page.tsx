@@ -13,21 +13,21 @@ export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<Movie[]>([]);
 
   // Fetch favorites
-  const { data: favoriteIds, isLoading: isLoadingFavorites } = useQuery({
+  const { data: favoriteIds, isLoading: isLoadingFavorites } = useQuery<any[]>({
     queryKey: ["/api/favorites"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user,
   });
 
   // Fetch movie details for each favorite
-  const { data: favoriteMovies, isLoading: isLoadingMovies } = useQuery({
+  const { data: favoriteMovies, isLoading: isLoadingMovies } = useQuery<any[]>({
     queryKey: ["/api/favorites/details"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!favoriteIds && favoriteIds.length > 0,
   });
 
   useEffect(() => {
-    if (favoriteMovies) {
+    if (favoriteMovies && Array.isArray(favoriteMovies)) {
       setFavorites(favoriteMovies);
     }
   }, [favoriteMovies]);
