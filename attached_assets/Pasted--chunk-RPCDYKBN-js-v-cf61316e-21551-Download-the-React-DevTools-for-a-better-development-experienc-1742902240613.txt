@@ -1,0 +1,33 @@
+
+﻿
+chunk-RPCDYKBN.js?v=cf61316e:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+queryClient.ts:32 
+ GET https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/api/user 401 (Unauthorized)
+chunk-RPCDYKBN.js?v=cf61316e:521 Warning: validateDOMNesting(...): <a> cannot appear as a descendant of <a>.
+    at a
+    at a
+    at https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=cf61316e:337:18
+    at nav
+    at aside
+    at Sidebar (https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/src/components/Sidebar.tsx:31:22)
+    at div
+    at HomePage (https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/src/pages/home-page.tsx:31:70)
+    at Route (https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=cf61316e:323:16)
+    at ProtectedRoute (https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=cf61316e:379:17)
+    at Router
+    at AuthProvider (https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/src/hooks/use-auth.tsx:27:32)
+    at QueryClientProvider (https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.d…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=cf61316e:2805:3)
+    at App
+queryClient.ts:32 
+ GET https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/api/movies/trending 500 (Internal Server Error)
+queryClient.ts:32 
+ GET https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/api/genres/movie 500 (Internal Server Error)
+queryClient.ts:32 
+ GET https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/api/recommendations 500 (Internal Server Error)
+queryClient.ts:32 
+ GET https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/api/genres/movie 500 (Internal Server Error)
+queryClient.ts:32 
+ GET https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/api/recommendations 500 (Internal Server Error)
+queryClient.ts:32 
+ GET https://647ac30c-a378-4b7e-82dd-df3bd829243c-00-38kz4lrn31pnl.worf.replit.dev/api/movies/trending 500 (Internal Server Error)
