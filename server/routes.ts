@@ -5,6 +5,7 @@ import { setupAuth } from "./auth";
 import axios from "axios";
 import { z } from "zod";
 import { insertFavoriteSchema } from "@shared/schema";
+import { getMovieRecommendations } from "./openai";
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "";
 const TMDB_API_BASE_URL = "https://api.themoviedb.org/3";
@@ -188,6 +189,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching recommendations:", error);
       res.status(500).json({ message: "Failed to fetch recommendations" });
+    }
+  });
+  
+  // AI-powered recommendations based on user description
+  app.post("/api/ai-recommendations", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { description } = req.body;
+      
+      if (!description || typeof description !== 'string') {
+        return res.status(400).json({ message: "Description is required" });
+      }
+      
+      // Get popular movies and TV shows to search through
+      const [moviesResponse, tvResponse] = await Promise.all([
+        axios.get(`${TMDB_API_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&page=1`),
+        axios.get(`${TMDB_API_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&page=1`)
+      ]);
+      
+      const movies = moviesResponse.data.results.map((movie: any) => ({
+        ...movie,
+        mediaType: 'movie'
+      }));
+      
+      const tvShows = tvResponse.data.results.map((show: any) => ({
+        ...show,
+        mediaType: 'tv'
+      }));
+      
+      // Combine movies and TV shows
+      const allContent = [...movies, ...tvShows];
+      
+      // Get AI recommendations
+      const aiRecommendations = await getMovieRecommendations(description, allContent);
+      
+      // Format recommendations for the frontend
+      const formattedRecommendations = {
+        page: 1,
+        results: aiRecommendations.map(rec => {
+          const originalItem = allContent.find(item => item.id === rec.id);
+          if (!originalItem) return null;
+          
+          return {
+            ...originalItem,
+            ai_reason: rec.reason
+          };
+        }).filter(Boolean)
+      };
+      
+      res.json(formattedRecommendations);
+    } catch (error) {
+      console.error("Error getting AI recommendations:", error);
+      res.status(500).json({ message: "Failed to get AI recommendations" });
     }
   });
 
