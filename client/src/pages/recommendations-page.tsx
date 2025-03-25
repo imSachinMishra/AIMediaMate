@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { mapMovieData } from "@/lib/utils";
 
 export default function RecommendationsPage() {
   const { user } = useAuth();
@@ -19,14 +20,32 @@ export default function RecommendationsPage() {
   const [recommendations, setRecommendations] = useState<Movie[]>([]);
   const [aiRecommendations, setAiRecommendations] = useState<(Movie & { ai_reason?: string })[]>([]);
   const [description, setDescription] = useState("");
-  const [activeTab, setActiveTab] = useState("algo");
+  const [activeTab, setActiveTab] = useState("ai");  // Start with AI tab active
   const [isSearching, setIsSearching] = useState(false);
+
+  // Fetch genre data for mapping
+  const { data: genresData } = useQuery<{ genres: any[] }>({
+    queryKey: ['/api/genres/movie'],
+  });
+
+  // Create a genre map for quick lookups
+  const genreMap: Record<number, string> = {};
+  if (genresData?.genres) {
+    genresData.genres.forEach(genre => {
+      genreMap[genre.id] = genre.name;
+    });
+  }
 
   // Fetch algorithm-based recommendations
   const { data: recommendedMovies, isLoading } = useQuery<any>({
     queryKey: ["/api/recommendations"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user,
+  });
+
+  // Fetch user favorites to mark favorite movies
+  const { data: favorites } = useQuery<any[]>({
+    queryKey: ['/api/favorites'],
   });
 
   // AI recommendation mutation
@@ -37,13 +56,23 @@ export default function RecommendationsPage() {
     },
     onSuccess: (data) => {
       if (data.results && data.results.length > 0) {
-        const movies = data.results.map((movie: any) => ({
-          ...movie,
-          mediaType: movie.media_type || (movie.first_air_date ? 'tv' : 'movie')
-        }));
+        // Process AI recommendations with proper genre mapping
+        const movies = data.results.map((movie: any) => {
+          const mediaType = movie.media_type || (movie.first_air_date ? 'tv' : 'movie');
+          const mappedMovie = mapMovieData(movie, favorites, mediaType, genreMap);
+          return {
+            ...mappedMovie,
+            ai_reason: movie.ai_reason
+          };
+        });
         setAiRecommendations(movies);
         setActiveTab("ai");
         setIsSearching(false);
+        
+        toast({
+          title: "AI Recommendations Ready",
+          description: `Found ${movies.length} movies matching your description`,
+        });
       } else {
         toast({
           title: "No recommendations found",
@@ -57,7 +86,7 @@ export default function RecommendationsPage() {
       console.error("Error getting AI recommendations:", error);
       toast({
         title: "Error",
-        description: "Failed to get AI recommendations",
+        description: "Failed to get AI recommendations. Please check if the OpenAI API key is valid.",
         variant: "destructive",
       });
       setIsSearching(false);
@@ -81,13 +110,13 @@ export default function RecommendationsPage() {
 
   useEffect(() => {
     if (recommendedMovies && recommendedMovies.results) {
-      const movies = recommendedMovies.results.map((movie: any) => ({
-        ...movie,
-        mediaType: movie.media_type || (movie.first_air_date ? 'tv' : 'movie')
-      }));
+      const movies = recommendedMovies.results.map((movie: any) => {
+        const mediaType = movie.media_type || (movie.first_air_date ? 'tv' : 'movie');
+        return mapMovieData(movie, favorites, mediaType, genreMap);
+      });
       setRecommendations(movies);
     }
-  }, [recommendedMovies]);
+  }, [recommendedMovies, favorites, genreMap]);
 
   return (
     <div className="flex h-screen bg-background">

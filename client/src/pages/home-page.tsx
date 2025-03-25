@@ -32,17 +32,25 @@ export default function HomePage() {
     queryKey: ['/api/favorites'],
   });
 
+  // Create a genre map for quick lookups
+  const genreMap: Record<number, string> = {};
+  if (genresData?.genres) {
+    genresData.genres.forEach(genre => {
+      genreMap[genre.id] = genre.name;
+    });
+  }
+
   // Map trending movies data to our Movie type
   const trendingMovies: Movie[] = trendingMoviesData?.results
     ? trendingMoviesData.results.slice(0, 4).map(movie => 
-        mapMovieData(movie, favorites, 'movie')
+        mapMovieData(movie, favorites, 'movie', genreMap)
       )
     : [];
 
   // Map recommended movies data to our Movie type
   const recommendedMovies: Movie[] = recommendedData?.results
     ? recommendedData.results.slice(0, 4).map(movie => 
-        mapMovieData(movie, favorites, movie.media_type || 'movie')
+        mapMovieData(movie, favorites, movie.media_type || 'movie', genreMap)
       )
     : [];
 

@@ -38,7 +38,8 @@ export function getGenreImages(genreName: string): string {
 export function mapMovieData(
   item: any, 
   favorites: any[] | undefined, 
-  mediaType: 'movie' | 'tv'
+  mediaType: 'movie' | 'tv',
+  genreMap?: Record<number, string>
 ): Movie {
   // Check if this movie is in user's favorites
   const isFavorite = favorites?.some(
@@ -47,6 +48,33 @@ export function mapMovieData(
   
   // Map providers if available
   const providers = item['watch/providers']?.results?.US?.flatrate || [];
+  
+  // Map genres properly if we have genre IDs and a genre map
+  let genres = item.genres || [];
+  if (item.genre_ids && genreMap) {
+    genres = item.genre_ids.map((id: number) => ({ 
+      id, 
+      name: genreMap[id] || 'Unknown' 
+    }));
+  }
+  
+  // For watch options, look in multiple places
+  const watchOptions = [
+    ...(item['watch/providers']?.results?.US?.flatrate || []),
+    ...(item['watch/providers']?.results?.US?.rent || []),
+    ...(item['watch/providers']?.results?.US?.buy || [])
+  ];
+  
+  // Remove duplicate providers
+  const uniqueProviders: any[] = [];
+  const providerIds = new Set();
+  
+  watchOptions.forEach((provider: any) => {
+    if (!providerIds.has(provider.provider_id)) {
+      providerIds.add(provider.provider_id);
+      uniqueProviders.push(provider);
+    }
+  });
   
   return {
     id: item.id,
@@ -58,10 +86,9 @@ export function mapMovieData(
     vote_average: item.vote_average,
     release_date: item.release_date,
     first_air_date: item.first_air_date,
-    genres: item.genres || 
-      (item.genre_ids ? item.genre_ids.map((id: number) => ({ id, name: 'Loading...' })) : []),
+    genres,
     mediaType,
     isFavorite,
-    providers,
+    providers: uniqueProviders,
   };
 }
