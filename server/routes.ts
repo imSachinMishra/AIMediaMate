@@ -139,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Get user's favorites
-      const userId = req.user!.id;
+      const userId = (req.user as any).id;
       const favorites = await storage.getFavorites(userId);
       
       if (favorites.length === 0) {
@@ -172,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const userId = req.user!.id;
+      const userId = (req.user as any).id;
       const favorites = await storage.getFavorites(userId);
       res.json(favorites);
     } catch (error) {
@@ -187,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const userId = req.user!.id;
+      const userId = (req.user as any).id;
       const favoriteData = insertFavoriteSchema.parse({
         ...req.body,
         userId,
@@ -216,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const userId = req.user!.id;
+      const userId = (req.user as any).id;
       const tmdbId = parseInt(req.params.tmdbId);
       
       if (isNaN(tmdbId)) {
