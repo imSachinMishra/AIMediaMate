@@ -80,11 +80,19 @@ export default function MovieCard({ movie, isTrending = false }: MovieCardProps)
           </div>
         )}
         
-        {isTrending && (
-          <div className="absolute top-2 left-2">
+        {/* Top left badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {isTrending && (
             <span className="bg-primary text-white text-xs px-2 py-1 rounded-md font-medium">Trending</span>
-          </div>
-        )}
+          )}
+          
+          {/* Display first genre as a badge */}
+          {movie.genres && movie.genres.length > 0 && movie.genres[0].name !== "Loading..." && (
+            <span className="bg-[rgba(0,0,0,0.7)] text-white text-xs px-2 py-1 rounded-md font-medium">
+              {movie.genres[0].name}
+            </span>
+          )}
+        </div>
         
         <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#0f1535] to-transparent">
           <div className="flex justify-between items-center">
