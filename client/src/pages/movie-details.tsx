@@ -194,20 +194,22 @@ export default function MovieDetails() {
                   
                   {providers.length > 0 && (
                     <div className="mb-6">
-                      <h3 className="text-white font-semibold mb-2">Watch on:</h3>
+                      <h3 className="text-white font-semibold mb-2">Available on:</h3>
                       <div className="flex gap-2">
-                        {providers.map((provider: any, idx: number) => (
-                          <PlatformBadge key={idx} provider={provider} />
-                        ))}
+                        {/* Filter out duplicate providers by ID */}
+                        {providers
+                          .filter((provider: any, index: number, self: any[]) => 
+                            index === self.findIndex((p) => p.provider_id === provider.provider_id)
+                          )
+                          .map((provider: any, idx: number) => (
+                            <PlatformBadge key={idx} provider={provider} />
+                          ))
+                        }
                       </div>
                     </div>
                   )}
                   
-                  <div className="flex flex-wrap gap-4">
-                    <Button onClick={handleWatchNow} disabled={providers.length === 0}>
-                      <Play className="mr-2 w-4 h-4" /> Watch Now
-                    </Button>
-                    
+                  <div className="flex flex-wrap gap-4">                    
                     <Button 
                       variant="secondary"
                       onClick={() => toggleFavorite.mutate()}

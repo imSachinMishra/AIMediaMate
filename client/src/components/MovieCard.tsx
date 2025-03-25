@@ -68,9 +68,15 @@ export default function MovieCard({ movie, isTrending = false }: MovieCardProps)
         
         {providers.length > 0 && (
           <div className="absolute top-2 right-2 platform-badges flex space-x-1">
-            {providers.map((provider, idx) => (
-              <PlatformBadge key={idx} provider={provider} />
-            ))}
+            {providers
+              .filter((provider, index, self) => 
+                index === self.findIndex((p) => p.provider_id === provider.provider_id)
+              )
+              .slice(0, 3) // Show maximum 3 icons to avoid overcrowding
+              .map((provider, idx) => (
+                <PlatformBadge key={idx} provider={provider} />
+              ))
+            }
           </div>
         )}
         
