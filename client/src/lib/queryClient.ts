@@ -41,6 +41,8 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+export const API_URL = window.location.hostname === 'localhost' ? 'http://0.0.0.0:3000' : ''; // Use relative URLs in production
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
