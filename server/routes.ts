@@ -118,6 +118,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch movie details" });
     }
   });
+  
+  app.get("/api/movie/:id/similar", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const response = await axios.get(
+        `${TMDB_API_BASE_URL}/movie/${id}/similar?api_key=${TMDB_API_KEY}`
+      );
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching similar movies:", error);
+      res.status(500).json({ message: "Failed to fetch similar movies" });
+    }
+  });
 
   app.get("/api/tv/:id", async (req, res) => {
     try {
@@ -129,6 +142,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching TV details:", error);
       res.status(500).json({ message: "Failed to fetch TV details" });
+    }
+  });
+  
+  app.get("/api/tv/:id/similar", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const response = await axios.get(
+        `${TMDB_API_BASE_URL}/tv/${id}/similar?api_key=${TMDB_API_KEY}`
+      );
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching similar TV shows:", error);
+      res.status(500).json({ message: "Failed to fetch similar TV shows" });
     }
   });
 
@@ -178,6 +204,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching favorites:", error);
       res.status(500).json({ message: "Failed to fetch favorites" });
+    }
+  });
+
+  app.get("/api/favorites/details", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const userId = (req.user as any).id;
+      const favorites = await storage.getFavorites(userId);
+      
+      if (favorites.length === 0) {
+        return res.json([]);
+      }
+
+      // Fetch details for each favorite
+      const detailedFavorites = await Promise.all(
+        favorites.map(async (fav) => {
+          try {
+            const response = await axios.get(
+              `${TMDB_API_BASE_URL}/${fav.mediaType}/${fav.tmdbId}?api_key=${TMDB_API_KEY}`
+            );
+            return {
+              ...response.data,
+              mediaType: fav.mediaType,
+              isFavorite: true
+            };
+          } catch (err) {
+            console.error(`Error fetching details for ${fav.mediaType}/${fav.tmdbId}:`, err);
+            // Return basic info if detailed fetch fails
+            return {
+              id: fav.tmdbId,
+              mediaType: fav.mediaType,
+              title: fav.title,
+              isFavorite: true
+            };
+          }
+        })
+      );
+      
+      res.json(detailedFavorites);
+    } catch (error) {
+      console.error("Error fetching favorite details:", error);
+      res.status(500).json({ message: "Failed to fetch favorite details" });
     }
   });
 
