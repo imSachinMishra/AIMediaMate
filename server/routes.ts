@@ -110,15 +110,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/movie/:id", async (req, res) => {
     try {
       const id = req.params.id;
-      const [details, providers] = await Promise.all([
-        axios.get(`${TMDB_API_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}`),
-        axios.get(`${TMDB_API_BASE_URL}/movie/${id}/watch/providers?api_key=${TMDB_API_KEY}`)
-      ]);
-      
-      res.json({
-        ...details.data,
-        "watch/providers": providers.data
-      });
+      const response = await axios.get(
+        `${TMDB_API_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&append_to_response=watch/providers`
+      );
+      res.json(response.data);
     } catch (error) {
       console.error("Error fetching movie details:", error);
       res.status(500).json({ message: "Failed to fetch movie details" });
