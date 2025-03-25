@@ -30,38 +30,50 @@ export default function Sidebar() {
       <nav className="space-y-1">
         <p className="text-xs text-[#A0AEC0] uppercase font-semibold px-3 mb-2">General</p>
         
-        <Link href="/">
-          <a className={`flex items-center px-3 py-3 rounded-lg group transition-all ${
+        <Button 
+          variant="ghost" 
+          className={`w-full justify-start px-3 py-3 rounded-lg group transition-all ${
             isActive('/') 
               ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary text-white' 
               : 'text-[#A0AEC0] hover:bg-[#1A2037]'
-          }`}>
+          }`}
+          asChild
+        >
+          <Link href="/">
             <Home className="w-5 h-5 mr-3" />
             <span>Dashboard</span>
-          </a>
-        </Link>
+          </Link>
+        </Button>
         
-        <Link href="/discover">
-          <a className={`flex items-center px-3 py-3 rounded-lg group transition-all ${
+        <Button 
+          variant="ghost" 
+          className={`w-full justify-start px-3 py-3 rounded-lg group transition-all ${
             isActive('/discover') 
               ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary text-white' 
               : 'text-[#A0AEC0] hover:bg-[#1A2037]'
-          }`}>
+          }`}
+          asChild
+        >
+          <Link href="/discover">
             <Compass className="w-5 h-5 mr-3" />
             <span>Discover</span>
-          </a>
-        </Link>
+          </Link>
+        </Button>
         
-        <Link href="/favorites">
-          <a className={`flex items-center px-3 py-3 rounded-lg group transition-all ${
+        <Button 
+          variant="ghost" 
+          className={`w-full justify-start px-3 py-3 rounded-lg group transition-all ${
             isActive('/favorites') 
               ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary text-white' 
               : 'text-[#A0AEC0] hover:bg-[#1A2037]'
-          }`}>
+          }`}
+          asChild
+        >
+          <Link href="/favorites">
             <Heart className="w-5 h-5 mr-3" />
             <span>Favorites</span>
-          </a>
-        </Link>
+          </Link>
+        </Button>
 
         <p className="text-xs text-[#A0AEC0] uppercase font-semibold px-3 mt-6 mb-2">Categories</p>
         
@@ -76,16 +88,21 @@ export default function Sidebar() {
         ) : (
           // Actual genre links
           movieGenres?.genres.slice(0, 6).map((genre) => (
-            <Link key={genre.id} href={`/genre/${genre.id}?mediaType=movie`}>
-              <a className={`flex items-center px-3 py-3 rounded-lg group transition-all ${
+            <Button 
+              key={genre.id}
+              variant="ghost" 
+              className={`w-full justify-start px-3 py-3 rounded-lg group transition-all ${
                 isActive(`/genre/${genre.id}`) 
                   ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary text-white' 
                   : 'text-[#A0AEC0] hover:bg-[#1A2037]'
-              }`}>
+              }`}
+              asChild
+            >
+              <Link href={`/genre/${genre.id}?mediaType=movie`}>
                 <Video className="w-5 h-5 mr-3" />
                 <span>{genre.name}</span>
-              </a>
-            </Link>
+              </Link>
+            </Button>
           ))
         )}
       </nav>

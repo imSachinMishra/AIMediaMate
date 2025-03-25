@@ -217,11 +217,23 @@ export default function MovieDetails() {
                       {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
                     </Button>
                     
-                    <Button variant="secondary">
+                    <Button 
+                      variant="secondary"
+                      onClick={() => {
+                        toast({
+                          title: "Coming Soon",
+                          description: "Watchlist feature will be available in the next update",
+                        });
+                      }}
+                    >
                       <Plus className="mr-2 w-4 h-4" /> Add to Watchlist
                     </Button>
                     
-                    <Button variant="secondary">
+                    <Button 
+                      variant="secondary"
+                      onClick={() => details?.homepage && window.open(details.homepage, '_blank')}
+                      disabled={!details?.homepage}
+                    >
                       <ExternalLink className="mr-2 w-4 h-4" /> Visit Website
                     </Button>
                   </div>

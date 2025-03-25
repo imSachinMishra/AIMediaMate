@@ -32,10 +32,16 @@ export default function PlatformBadge({ provider }: PlatformBadgeProps) {
     }
   };
 
+  // Handle click to redirect to streaming service
+  const handleClick = () => {
+    window.open(`https://www.google.com/search?q=Watch+on+${encodeURIComponent(provider.provider_name)}`, '_blank');
+  };
+
   return (
     <div 
-      className="w-6 h-6 flex items-center justify-center rounded-md bg-[rgba(15,21,53,0.7)]"
-      title={provider.provider_name}
+      className="w-6 h-6 flex items-center justify-center rounded-md bg-[rgba(15,21,53,0.7)] cursor-pointer hover:bg-[rgba(45,51,83,0.7)] transition-colors"
+      title={`Watch on ${provider.provider_name}`}
+      onClick={handleClick}
     >
       {getProviderIcon()}
     </div>
