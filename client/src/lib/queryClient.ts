@@ -12,9 +12,22 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  if (url.includes("/register") && data && typeof data === "object") {
+    const { username } = data as { username?: string };
+    console.log("Register Data (Before API Call):", data); // Debug log to inspect the data object
+    if (!username || username.trim() === "") {
+      console.error("Error: Username is empty or invalid."); // Log error for debugging
+      throw new Error("Username is required and cannot be empty.");
+    }
+  }
+
+  const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(data ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}), // Add Authorization header if token exists
+    },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -29,8 +42,10 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
+    const res = await fetch(queryKey[1] as string, {
       credentials: "include",
+      headers: token ? { Authorization: `Bearer ${token}` } : {}, // Add Authorization header if token exists
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

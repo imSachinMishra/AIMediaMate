@@ -34,8 +34,8 @@ export const insertUserSchema = createInsertSchema(users)
   });
 
 export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string().min(1, "Username is required").trim(),
+  password: z.string().min(1, "Password is required").trim(),
 });
 
 export const insertFavoriteSchema = createInsertSchema(favorites).pick({

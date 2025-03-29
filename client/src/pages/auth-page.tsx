@@ -62,6 +62,7 @@ export default function AuthPage() {
   // Register form
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
+    mode: "onChange",
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -82,10 +83,25 @@ export default function AuthPage() {
   };
   
   // Handle register submit
-  const onRegisterSubmit = (values: RegisterFormValues) => {
-    // Remove confirmPassword and agreeTerms before sending to API
-    const { confirmPassword, agreeTerms, ...registerData } = values;
-    registerMutation.mutate(registerData);
+  const onRegisterSubmit = async (values: RegisterFormValues) => {
+    try {
+      const username = registerForm.getValues("username");
+      if (!username || !username.trim()) {
+        registerForm.setError("username", { message: "Username is required" });
+        return;
+      }
+
+      const { confirmPassword, agreeTerms, ...registerData } = values;
+      console.log("Registration payload:", registerData); // Debug log
+
+      await registerMutation.mutateAsync(registerData);
+    } catch (error) {
+      console.error("Registration error:", error);
+      // Set form error
+      registerForm.setError("root", {
+        message: "Registration failed. Please try again.",
+      });
+    }
   };
   
   return (
@@ -194,7 +210,9 @@ export default function AuthPage() {
             </div>
             
             <Form {...registerForm}>
-              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
+              <form onSubmit={registerForm.handleSubmit((values) => {
+                onRegisterSubmit(values);
+              })} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={registerForm.control}
@@ -243,7 +261,14 @@ export default function AuthPage() {
                         <Input
                           placeholder="johndoe"
                           className="bg-[rgba(45,55,72,0.5)] border-[rgba(160,174,192,0.2)] text-white"
-                          {...field}
+                          value={field.value}
+                          onChange={(e) => {
+                            field.onChange(e.target.value);
+                            registerForm.setValue("username", e.target.value, { 
+                              shouldValidate: true,
+                              shouldDirty: true 
+                            });
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
