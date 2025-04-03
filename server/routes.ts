@@ -346,25 +346,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (aiRecommendations && aiRecommendations.length > 0) {
           console.log(`[DEBUG] OpenAI returned ${aiRecommendations.length} recommendations`);
-          // Format the response for the frontend
-          const formattedRecommendations = aiRecommendations.map(rec => ({
-            id: rec.id || Math.random().toString(36).substring(2, 9),
-            title: rec.title,
-            overview: rec.description,
-            media_type: rec.mediaType,
-            ai_reason: rec.reason,
-            is_ai_generated: true,
-            fallback: false,
-            poster_path: rec.poster_path
-          }));
+          
+          // Fetch detailed movie information from TMDB for each recommendation
+          const detailedRecommendations = await Promise.all(
+            aiRecommendations.map(async (rec) => {
+              try {
+                // Search for the movie in TMDB
+                const searchResponse = await axios.get(
+                  `${TMDB_API_BASE_URL}/search/${rec.mediaType}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(rec.title)}`
+                );
+                
+                if (searchResponse.data.results && searchResponse.data.results.length > 0) {
+                  const match = searchResponse.data.results[0];
+                  
+                  // Get more details about the movie
+                  const detailsResponse = await axios.get(
+                    `${TMDB_API_BASE_URL}/${rec.mediaType}/${match.id}?api_key=${TMDB_API_KEY}`
+                  );
+                  
+                  return {
+                    id: match.id,
+                    title: match.title || match.name,
+                    overview: detailsResponse.data.overview || rec.description,
+                    media_type: rec.mediaType,
+                    ai_reason: rec.reason,
+                    is_ai_generated: true,
+                    fallback: false,
+                    poster_path: match.poster_path,
+                    release_date: match.release_date || match.first_air_date,
+                    vote_average: match.vote_average
+                  };
+                }
+                
+                return {
+                  id: rec.id || Math.random().toString(36).substring(2, 9),
+                  title: rec.title,
+                  overview: rec.description,
+                  media_type: rec.mediaType,
+                  ai_reason: rec.reason,
+                  is_ai_generated: true,
+                  fallback: false,
+                  poster_path: null
+                };
+              } catch (error) {
+                console.error(`Error fetching details for "${rec.title}":`, error);
+                return {
+                  id: rec.id || Math.random().toString(36).substring(2, 9),
+                  title: rec.title,
+                  overview: rec.description,
+                  media_type: rec.mediaType,
+                  ai_reason: rec.reason,
+                  is_ai_generated: true,
+                  fallback: false,
+                  poster_path: null
+                };
+              }
+            })
+          );
           
           return res.json({ 
-            results: formattedRecommendations,
+            results: detailedRecommendations,
             fallback: false
           });
-        } else {
-          console.log('[DEBUG] OpenAI returned no recommendations, trying Hugging Face');
-          throw new Error('No recommendations returned from OpenAI');
         }
       } catch (error) {
         console.error('[ERROR] OpenAI recommendation error:', error);
@@ -376,26 +419,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (hfRecommendations && hfRecommendations.length > 0) {
             console.log(`[DEBUG] Hugging Face returned ${hfRecommendations.length} recommendations`);
-            const formattedRecommendations = hfRecommendations.map(rec => ({
-              id: rec.id || Math.random().toString(36).substring(2, 9),
-              title: rec.title,
-              overview: rec.description,
-              media_type: rec.mediaType,
-              ai_reason: rec.reason,
-              is_ai_generated: true,
-              fallback: true,
-              fallbackSource: 'huggingface',
-              poster_path: rec.poster_path
-            }));
+            
+            // Fetch detailed movie information from TMDB for each recommendation
+            const detailedRecommendations = await Promise.all(
+              hfRecommendations.map(async (rec) => {
+                try {
+                  // Search for the movie in TMDB
+                  const searchResponse = await axios.get(
+                    `${TMDB_API_BASE_URL}/search/${rec.mediaType}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(rec.title)}`
+                  );
+                  
+                  if (searchResponse.data.results && searchResponse.data.results.length > 0) {
+                    const match = searchResponse.data.results[0];
+                    
+                    // Get more details about the movie
+                    const detailsResponse = await axios.get(
+                      `${TMDB_API_BASE_URL}/${rec.mediaType}/${match.id}?api_key=${TMDB_API_KEY}`
+                    );
+                    
+                    return {
+                      id: match.id,
+                      title: match.title || match.name,
+                      overview: detailsResponse.data.overview || rec.description,
+                      media_type: rec.mediaType,
+                      ai_reason: rec.reason,
+                      is_ai_generated: true,
+                      fallback: true,
+                      fallbackSource: 'huggingface',
+                      poster_path: match.poster_path,
+                      release_date: match.release_date || match.first_air_date,
+                      vote_average: match.vote_average
+                    };
+                  }
+                  
+                  return {
+                    id: rec.id || Math.random().toString(36).substring(2, 9),
+                    title: rec.title,
+                    overview: rec.description,
+                    media_type: rec.mediaType,
+                    ai_reason: rec.reason,
+                    is_ai_generated: true,
+                    fallback: true,
+                    fallbackSource: 'huggingface',
+                    poster_path: null
+                  };
+                } catch (error) {
+                  console.error(`Error fetching details for "${rec.title}":`, error);
+                  return {
+                    id: rec.id || Math.random().toString(36).substring(2, 9),
+                    title: rec.title,
+                    overview: rec.description,
+                    media_type: rec.mediaType,
+                    ai_reason: rec.reason,
+                    is_ai_generated: true,
+                    fallback: true,
+                    fallbackSource: 'huggingface',
+                    poster_path: null
+                  };
+                }
+              })
+            );
             
             return res.json({ 
-              results: formattedRecommendations,
+              results: detailedRecommendations,
               fallback: true,
               fallbackSource: 'huggingface'
             });
-          } else {
-            console.log('[DEBUG] Hugging Face returned no recommendations, falling back to keyword-based');
-            throw new Error('No recommendations returned from Hugging Face');
           }
         } catch (hfError) {
           console.error('[ERROR] Hugging Face recommendation error:', hfError);
@@ -405,109 +494,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If both AI services fail, fall back to keyword-based recommendations
       console.log('[DEBUG] Falling back to keyword-based recommendations');
       
-      // For regional cinema, use region-specific search
-      let searchResults = [];
+      // Extract mood keywords and map them to search terms
+      const moodKeywords = {
+        'lighten': ['feel good', 'uplifting', 'heartwarming', 'comedy'],
+        'happy': ['comedy', 'feel good', 'uplifting'],
+        'cheer': ['comedy', 'feel good', 'uplifting'],
+        'relax': ['light hearted', 'comedy', 'heartwarming'],
+        'feel good': ['uplifting', 'heartwarming', 'comedy'],
+        'mind': ['comedy', 'uplifting', 'heartwarming']
+      };
       
-      if (region) {
-        // Search for movies from the specific region
-        const regionQuery = `${region} ${description}`;
-        console.log(`[DEBUG] Searching for region-specific movies with query: "${regionQuery}"`);
-        
-        try {
-          // For Bollywood, use a more specific search approach
-          if (region === 'bollywood') {
-            // First try a direct search with the region name and genre
-            const regionQuery = `${region} ${description}`;
-            console.log(`[DEBUG] Searching for Bollywood movies with query: "${regionQuery}"`);
-            
-            const regionResults = await axios.get(
-              `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(regionQuery)}`
-            );
-            
-            if (regionResults?.data?.results?.length > 0) {
-              console.log(`[DEBUG] Found ${regionResults.data.results.length} Bollywood results`);
-              searchResults = regionResults.data.results;
-            } else {
-              console.log(`[DEBUG] No direct Bollywood results found, trying alternative search`);
-              
-              // Try searching for popular Bollywood actors/directors combined with the genre
-              const bollywoodKeywords = [
-                'shah rukh khan', 'amitabh bachchan', 'aamir khan', 'salman khan', 
-                'priyanka chopra', 'deepika padukone', 'karan johar', 'yash raj', 
-                'raj kapoor', 'ranbir kapoor', 'ranveer singh', 'alia bhatt'
-              ];
-              
-              // Extract genre keywords from the description
-              const genreKeywords = description.toLowerCase().split(/\s+/).filter((word: string) => 
-                ['comedy', 'drama', 'action', 'romance', 'thriller', 'horror', 'sci-fi', 
-                 'documentary', 'musical', 'family', 'adventure', 'fantasy'].includes(word)
-              );
-              
-              // Try each Bollywood keyword with the genre
-              for (const actor of bollywoodKeywords) {
-                if (searchResults.length > 0) break; // Stop if we found results
-                
-                for (const genre of genreKeywords) {
-                  const searchQuery = `${actor} ${genre}`;
-                  console.log(`[DEBUG] Trying Bollywood search: "${searchQuery}"`);
-                  
-                  const searchResponse = await axios.get(
-                    `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchQuery)}`
-                  );
-                  
-                  if (searchResponse?.data?.results?.length > 0) {
-                    console.log(`[DEBUG] Found ${searchResponse.data.results.length} results for "${searchQuery}"`);
-                    searchResults = searchResponse.data.results;
-                    break;
-                  }
-                }
-              }
-              
-              // If still no results, try a broader search with just "bollywood" and the genre
-              if (searchResults.length === 0 && genreKeywords.length > 0) {
-                const broadQuery = `bollywood ${genreKeywords[0]}`;
-                console.log(`[DEBUG] Trying broad Bollywood search: "${broadQuery}"`);
-                
-                const broadResults = await axios.get(
-                  `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(broadQuery)}`
-                );
-                
-                if (broadResults?.data?.results?.length > 0) {
-                  console.log(`[DEBUG] Found ${broadResults.data.results.length} broad Bollywood results`);
-                  searchResults = broadResults.data.results;
-                }
-              }
-            }
-          } else {
-            // For other regions, use the standard approach
-            const regionResults = await axios.get(
-              `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(regionQuery)}`
-            );
-            
-            if (regionResults && regionResults.data && regionResults.data.results && regionResults.data.results.length > 0) {
-              console.log(`[DEBUG] Found ${regionResults.data.results.length} ${region} results`);
-              searchResults = regionResults.data.results;
-            } else {
-              console.log(`[DEBUG] No ${region} results found for "${regionQuery}"`);
-            }
+      // Find matching mood keywords in the description
+      const userWords = description.toLowerCase().split(/\s+/);
+      let searchTerms = new Set<string>();
+      
+      for (const word of userWords) {
+        for (const [mood, terms] of Object.entries(moodKeywords)) {
+          if (word.includes(mood)) {
+            terms.forEach(term => searchTerms.add(term));
           }
-        } catch (error) {
-          console.error(`[ERROR] Error searching for region-specific movies:`, error);
         }
       }
       
-      // If no region-specific results or no region mentioned, do a general search
+      // If no mood keywords found, use the original description
+      const searchQueries = searchTerms.size > 0 
+        ? Array.from(searchTerms)
+        : [description];
+      
+      // For regional cinema, use region-specific search
+      let searchResults = [];
+      
+      // Try each search term until we find results
+      for (const query of searchQueries) {
+        if (searchResults.length > 0) break;
+        
+        try {
+          console.log(`[DEBUG] Searching with query: "${query}"`);
+          const results = await axios.get(
+            `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
+          );
+          
+          if (results?.data?.results?.length > 0) {
+            // Filter for movies with positive vote average
+            searchResults = results.data.results.filter((item: any) => 
+              item.vote_average >= 7.0 || item.popularity > 50
+            );
+            
+            if (searchResults.length > 0) {
+              console.log(`[DEBUG] Found ${searchResults.length} results for "${query}" with good ratings`);
+              break;
+            }
+          }
+        } catch (error) {
+          console.error(`[ERROR] Error searching with query "${query}":`, error);
+        }
+      }
+      
+      // If still no results, try a general search
       if (searchResults.length === 0) {
-        console.log(`[DEBUG] Performing general search for: "${description}"`);
+        console.log(`[DEBUG] No results found with mood keywords, trying general search`);
         try {
           const generalResults = await axios.get(
-            `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(description)}`
+            `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=feel%20good%20comedy`
           );
-          if (generalResults && generalResults.data && generalResults.data.results) {
-            console.log(`[DEBUG] Found ${generalResults.data.results.length} general results`);
-            searchResults = generalResults.data.results;
-          } else {
-            console.log(`[DEBUG] No general results found for "${description}"`);
+          if (generalResults?.data?.results) {
+            searchResults = generalResults.data.results.filter((item: any) => 
+              item.vote_average >= 7.0 || item.popularity > 50
+            );
+            console.log(`[DEBUG] Found ${searchResults.length} general results`);
           }
         } catch (error) {
           console.error(`[ERROR] Error performing general search:`, error);
@@ -515,38 +569,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Format the response for the frontend
-      const formattedResults = await Promise.all(searchResults.map(async (item: any) => {
-        // Get more details about the movie/show to ensure we have the poster path
-        try {
-          const detailsResponse = await axios.get(
-            `${TMDB_API_BASE_URL}/${item.media_type}/${item.id}?api_key=${TMDB_API_KEY}`
-          );
-          
-          return {
-            id: item.id,
-            title: item.title || item.name,
-            overview: item.overview,
-            media_type: item.media_type,
-            ai_reason: `Based on your search for "${description}"${region ? ` and region "${region}"` : ''}`,
-            is_ai_generated: false,
-            fallback: true,
-            fallbackSource: 'keyword',
-            poster_path: detailsResponse.data.poster_path
-          };
-        } catch (error) {
-          console.error(`Error fetching details for ${item.title || item.name}:`, error);
-          return {
-            id: item.id,
-            title: item.title || item.name,
-            overview: item.overview,
-            media_type: item.media_type,
-            ai_reason: `Based on your search for "${description}"${region ? ` and region "${region}"` : ''}`,
-            is_ai_generated: false,
-            fallback: true,
-            fallbackSource: 'keyword',
-            poster_path: item.poster_path
-          };
-        }
+      const formattedResults = searchResults.map((item: any) => ({
+        id: item.id,
+        title: item.title || item.name,
+        overview: item.overview,
+        media_type: item.media_type,
+        ai_reason: `This ${item.vote_average >= 7.0 ? 'highly-rated' : 'popular'} ${
+          item.media_type === 'movie' ? 'movie' : 'show'
+        } is known for its uplifting and entertaining content, perfect for lightening your mood.`,
+        is_ai_generated: false,
+        fallback: true,
+        fallbackSource: 'keyword',
+        poster_path: item.poster_path,
+        release_date: item.release_date || item.first_air_date,
+        vote_average: item.vote_average
       }));
       
       console.log(`[DEBUG] Returning ${formattedResults.length} keyword-based recommendations`);

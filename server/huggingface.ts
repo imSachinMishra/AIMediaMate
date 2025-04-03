@@ -24,24 +24,30 @@ export async function getHuggingFaceRecommendations(
     const prompt = `
     Based on this user description: "${userDescription}"
     
-    Recommend 5 movies or TV shows that would match the user's description.
-    
     CRITICAL INSTRUCTIONS:
-    1. REGIONAL CINEMA: If the user mentions a specific region (like Bollywood, Korean, French, etc.), you MUST recommend actual films from that region, not Hollywood equivalents.
-    2. For Bollywood requests: Recommend ONLY actual Bollywood films (Indian Hindi-language films), not Hollywood movies with similar themes.
-    3. For genre requests: Match the genre accurately and prioritize films that best represent that genre.
-    4. For actor/director mentions: Prioritize their work, especially from the region mentioned.
+    1. EMOTIONAL NEEDS: If the user describes wanting to "lighten their mind", "feel good", or "cheer up", recommend movies that are:
+       - Uplifting and positive
+       - Light-hearted and fun
+       - Known to improve mood
+       - Engaging but not stressful
     
-    For each recommendation, provide:
-    1. The exact title of the movie or TV show
-    2. A brief description of the content
-    3. A detailed explanation of why it matches the user's description
-    4. Whether it's a movie or TV show
+    2. MOOD CATEGORIES:
+       - For mood lifting: Recommend feel-good comedies, inspiring stories, or heartwarming adventures
+       - For relaxation: Suggest light comedies, pleasant dramas, or comforting stories
+       - For entertainment: Focus on engaging, enjoyable, and well-received films
+    
+    3. QUALITY CRITERIA:
+       - Prioritize movies with positive audience reception
+       - Focus on films known for their mood-lifting qualities
+       - Consider both classic and contemporary options
+    
+    Recommend 5 movies or TV shows that will best help achieve the user's desired emotional state.
+    For each recommendation, explain how it will help improve their mood.
     
     Format your response as a JSON array with objects containing:
-    - title: The exact title
-    - description: Brief description
-    - reason: Why it matches
+    - title: The exact movie/show title
+    - description: Brief content description
+    - reason: How this will help their emotional state
     - mediaType: "movie" or "tv"
     `;
 

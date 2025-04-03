@@ -100,24 +100,6 @@ export default function RecommendationsPage() {
         
         // Get the region from the user's description
         const region = detectRegion(userDescription);
-        
-        if (data.fallbackSource === 'huggingface') {
-          toast({
-            title: "Using Hugging Face",
-            description: region 
-              ? `Primary AI service unavailable. Using Hugging Face to find ${region} movies.` 
-              : 'Primary AI service unavailable. Using Hugging Face for recommendations.',
-            variant: "default",
-          });
-        } else if (data.fallbackSource === 'keyword') {
-          toast({
-            title: "Using Keyword Search",
-            description: region 
-              ? `AI services unavailable. Showing ${region} movies based on your search.` 
-              : 'AI services unavailable. Showing results based on your search.',
-            variant: "default",
-          });
-        }
       } else {
         setIsUsingFallback(false);
         setFallbackSource(null);
@@ -247,16 +229,6 @@ export default function RecommendationsPage() {
                     <CardDescription>
                       Describe what you're looking for and our AI will find the perfect movies and TV shows for you
                     </CardDescription>
-                    
-                    {isUsingFallback && (
-                      <div className="mt-2 p-2 bg-yellow-500/20 border border-yellow-500/30 rounded-md text-yellow-200 text-sm">
-                        <p>⚠️ {fallbackSource === "huggingface" 
-                          ? "The primary AI service is currently unavailable. We're using Hugging Face to find matches for you."
-                          : fallbackSource === "keyword"
-                          ? "The AI services are currently unavailable. We're using a keyword-based system to find matches for you."
-                          : "The AI service is currently unavailable. We're using a fallback system to find matches for you."}</p>
-                      </div>
-                    )}
                     
                     <div className="flex gap-2 mt-4">
                       <div className="relative flex-1">

@@ -30,23 +30,26 @@ export async function getMovieRecommendations(
   try {
     // First, generate movie recommendations based on the description
     const prompt = `
-    You are an expert movie and TV show recommendation system specializing in global cinema. Your task is to recommend movies and TV shows based on this user description:
+    You are an expert movie and TV show recommendation system specializing in understanding human emotions and entertainment preferences. Your task is to recommend movies and TV shows based on this user description:
     "${userDescription}"
     
     CRITICAL INSTRUCTIONS:
-    1. REGIONAL CINEMA: If the user mentions a specific region (like Bollywood, Korean, French, etc.), you MUST recommend actual films from that region, not Hollywood equivalents.
-    2. For Bollywood requests: Recommend ONLY actual Bollywood films (Indian Hindi-language films), not Hollywood movies with similar themes.
-    3. For genre requests: Match the genre accurately and prioritize films that best represent that genre.
-    4. For actor/director mentions: Prioritize their work, especially from the region mentioned.
+    1. EMOTIONAL CONTEXT: If the user describes their mood or emotional state (e.g., "lighten my mind", "feel good", "cheer me up"), prioritize movies that match that emotional need.
+    2. MOOD MAPPING:
+       - For "lighten mood" or "feel good": Recommend uplifting comedies, heartwarming dramas, or inspiring stories
+       - For "cheer up": Focus on comedy, adventure, or feel-good movies
+       - For "relax": Suggest light-hearted, low-stress movies or comforting stories
+    3. REGIONAL CINEMA: If mentioned, recommend actual films from that region
+    4. QUALITY FOCUS: Prioritize well-received, highly-rated movies that are known to achieve the requested emotional effect
     
-    Analyze the user's description to understand:
-    1. The specific region of cinema they're interested in (if any)
-    2. The genre or type of content they're looking for
-    3. The themes, plot elements, or mood they're interested in
-    4. Any specific actors, directors, or time periods mentioned
+    Analyze the user's request to understand:
+    1. Their current emotional state or desired mood
+    2. The type of experience they're looking for
+    3. Any specific genres or themes they might enjoy
+    4. Cultural or regional preferences if mentioned
     
-    Based on this analysis, recommend up to 5 movies or TV shows that would match the user's description.
-    For each recommendation, provide a detailed explanation of why it matches the user's description.
+    Based on this analysis, recommend 5 movies or TV shows that would best help achieve their desired emotional state.
+    For each recommendation, explain specifically how it will help with their request.
     
     Return ONLY a JSON object in this format:
     {
@@ -54,14 +57,14 @@ export async function getMovieRecommendations(
         {
           "title": [exact movie/show title],
           "description": [brief content description],
-          "reason": [detailed reason why this content matches the user's description],
+          "reason": [detailed explanation of how this will help their emotional state],
           "mediaType": [either "movie" or "tv"]
         },
         ...
       ]
     }
     
-    Make sure your recommendations are truly relevant to the user's description, not just based on popularity.
+    Focus on movies that are genuinely effective at achieving the user's emotional goals, not just popular titles.
     `;
 
     // Call the OpenAI API to generate recommendations
