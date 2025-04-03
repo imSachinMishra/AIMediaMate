@@ -11,6 +11,13 @@ export default function Sidebar() {
   
   const { data: movieGenres, isLoading: isLoadingMovieGenres } = useQuery<{ genres: { id: number, name: string }[] }>({
     queryKey: ['/api/genres/movie'],
+    queryFn: async () => {
+      const response = await fetch('/api/genres/movie');
+      if (!response.ok) {
+        throw new Error('Failed to fetch genres');
+      }
+      return response.json();
+    }
   });
   
   // Function to determine if a link is active
@@ -98,7 +105,7 @@ export default function Sidebar() {
               }`}
               asChild
             >
-              <Link href={`/genre/${genre.id}?mediaType=movie`}>
+              <Link href={`/genre/${genre.id}`}>
                 <Video className="w-5 h-5 mr-3" />
                 <span>{genre.name}</span>
               </Link>

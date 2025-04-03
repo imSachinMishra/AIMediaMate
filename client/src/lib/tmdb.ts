@@ -1,6 +1,9 @@
 // API endpoints for TMDB
 // These are called server-side to protect the API key
 
+// Base URL for TMDB images
+export const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+
 export const TMDB_ENDPOINTS = {
   // Movies
   trendingMovies: '/api/movies/trending',

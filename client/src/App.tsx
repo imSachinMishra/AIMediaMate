@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import GenrePage from "@/pages/genre-page";
+import DiscoverPage from "@/pages/discover-page";
 import MovieDetails from "@/pages/movie-details";
 import SearchPage from "@/pages/search-page";
 import FavoritesPage from "@/pages/favorites-page";
@@ -21,7 +22,7 @@ function Router() {
       <ProtectedRoute path="/movie/:id" component={MovieDetails} />
       <ProtectedRoute path="/tv/:id" component={MovieDetails} />
       <ProtectedRoute path="/search" component={SearchPage} />
-      <ProtectedRoute path="/discover" component={GenrePage} />
+      <ProtectedRoute path="/discover" component={DiscoverPage} />
       <ProtectedRoute path="/favorites" component={FavoritesPage} />
       <ProtectedRoute path="/recommendations" component={RecommendationsPage} />
       <Route path="/auth" component={AuthPage} />

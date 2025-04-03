@@ -6,6 +6,36 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Format date for display
+export function formatDate(dateString?: string): string {
+  if (!dateString) return "Release date unknown";
+  
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch (error) {
+    return "Invalid date";
+  }
+}
+
+// Format genres for display
+export function formatGenres(genres?: { id: number; name: string }[]): string[] {
+  if (!genres || genres.length === 0) return ["Unknown"];
+  
+  return genres.map(genre => genre.name);
+}
+
+// Format rating for display
+export function formatRating(rating?: number): string {
+  if (rating === undefined || rating === null) return "N/A";
+  
+  return rating.toFixed(1) + "/10";
+}
+
 // Map genre names to appropriate images
 export function getGenreImages(genreName: string): string {
   const genreImageMap: Record<string, string> = {
@@ -42,9 +72,9 @@ export function mapMovieData(
   genreMap?: Record<number, string>
 ): Movie {
   // Check if this movie is in user's favorites
-  const isFavorite = favorites?.some(
+  const isFavorite = Array.isArray(favorites) ? favorites.some(
     (fav) => fav.tmdbId === item.id && fav.mediaType === mediaType
-  );
+  ) : false;
   
   // Map providers if available
   const providers = item['watch/providers']?.results?.US?.flatrate || [];

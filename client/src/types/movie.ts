@@ -16,4 +16,9 @@ export interface Movie {
     provider_name: string;
     logo_path?: string;
   }[];
+  // AI recommendation properties
+  aiReason?: string;
+  isAiGenerated?: boolean;
+  isFallback?: boolean;
+  fallbackSource?: string;
 }
