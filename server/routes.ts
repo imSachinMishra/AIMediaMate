@@ -224,9 +224,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Query parameter is required" });
       }
       
+      console.log(`[DEBUG] Searching for: "${query}"`);
+      
       const response = await axios.get(
-        `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${query}`
+        `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query as string)}`
       );
+      
+      console.log(`[DEBUG] Found ${response.data.results?.length || 0} results`);
+      
       res.json(response.data);
     } catch (error) {
       console.error("Error searching:", error);

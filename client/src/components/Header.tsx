@@ -25,7 +25,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
     mutationFn: async (query: string) => {
       if (!query.trim()) return null;
       const response = await apiRequest('GET', `/api/search/multi?query=${encodeURIComponent(query)}`);
-      return response.json();
+      return response.data;
     },
     onSuccess: (data) => {
       if (data && data.results && data.results.length > 0) {
@@ -39,9 +39,10 @@ export default function Header({ title, subtitle }: HeaderProps) {
       }
     },
     onError: (error) => {
+      console.error('Search error:', error);
       toast({
         title: "Search failed",
-        description: "An error occurred while searching",
+        description: "An error occurred while searching. Please try again.",
         variant: "destructive",
       });
     }

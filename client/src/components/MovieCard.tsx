@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/tmdb";
 import { formatDate, formatGenres, formatRating } from "@/lib/utils";
+import DefaultPoster from "./DefaultPoster";
 
 interface MovieCardProps {
   movie: Movie;
@@ -91,7 +92,7 @@ export default function MovieCard({ movie, isTrending = false, timestamp }: Movi
   // Get poster URL with cache busting
   const posterUrl = movie.poster_path 
     ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}?v=${imageKey}`
-    : '/placeholder.svg';
+    : null;
   
   // Map providers to their icons
   const providers = movie.providers || [];
@@ -100,14 +101,18 @@ export default function MovieCard({ movie, isTrending = false, timestamp }: Movi
     <div className="group relative overflow-hidden rounded-lg bg-card transition-all hover:shadow-lg">
       <Link to={`/${movie.mediaType}/${movie.id}`} className="block">
         <div className="aspect-[2/3] w-full overflow-hidden">
-          <img 
-            src={posterUrl} 
-            alt={movie.title} 
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            loading="eager"
-            decoding="async"
-            key={`${movie.id}-${imageKey}`}
-          />
+          {posterUrl ? (
+            <img 
+              src={posterUrl} 
+              alt={movie.title} 
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              loading="eager"
+              decoding="async"
+              key={`${movie.id}-${imageKey}`}
+            />
+          ) : (
+            <DefaultPoster movie={movie} />
+          )}
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
           <div className="absolute bottom-0 left-0 right-0 p-4">
