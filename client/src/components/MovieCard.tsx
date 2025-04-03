@@ -1,21 +1,60 @@
 import { Link } from "wouter";
 import { Movie } from "../types/movie";
 import PlatformBadge from "./PlatformBadge";
-import { ExternalLink, Heart, Plus, Star } from "lucide-react";
+import { ExternalLink, Heart, Plus, Star, Calendar } from "lucide-react";
 import { Button } from "./ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useState, useEffect } from "react";
 
 interface MovieCardProps {
   movie: Movie;
   isTrending?: boolean;
 }
 
+// Generate a random string for cache busting
+function generateRandomString(length = 10) {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
+
 export default function MovieCard({ movie, isTrending = false }: MovieCardProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [imageKey, setImageKey] = useState(generateRandomString());
+  
+  // Update imageKey when movie ID or poster path changes
+  useEffect(() => {
+    setImageKey(generateRandomString());
+  }, [movie.id, movie.poster_path]);
+  
+  // Format release date
+  const releaseDate = movie.release_date 
+    ? new Date(movie.release_date).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      })
+    : 'Release date unknown';
+  
+  // Format genres
+  const genres = movie.genres?.join(', ') || 'Genre unknown';
+  
+  // Format rating
+  const rating = movie.vote_average 
+    ? movie.vote_average.toFixed(1) 
+    : 'N/A';
+  
+  // Get poster URL with cache busting
+  const posterUrl = movie.poster_path 
+    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}?v=${imageKey}`
+    : '/placeholder-poster.jpg';
   
   // Map providers to their icons
   const providers = movie.providers || [];
@@ -55,93 +94,46 @@ export default function MovieCard({ movie, isTrending = false }: MovieCardProps)
   });
 
   return (
-    <div className="movie-card rounded-xl overflow-hidden bg-[rgba(26,32,55,0.8)] backdrop-blur-md border border-[rgba(255,255,255,0.05)] transition-all duration-300 hover:translate-y-[-5px] hover:shadow-[0_8px_26px_rgba(0,0,0,0.4)]">
-      <div className="relative aspect-[2/3]">
-        <img 
-          src={movie.poster_path 
-            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-            : `https://via.placeholder.com/500x750?text=No+Poster`
-          } 
-          alt={movie.title || movie.name} 
-          className="w-full h-full object-cover"
-        />
-        
-        {providers.length > 0 && (
-          <div className="absolute top-2 right-2 platform-badges flex space-x-1">
-            {providers
-              .filter((provider, index, self) => 
-                index === self.findIndex((p) => p.provider_id === provider.provider_id)
-              )
-              .slice(0, 3) // Show maximum 3 icons to avoid overcrowding
-              .map((provider, idx) => (
-                <PlatformBadge key={idx} provider={provider} />
-              ))
-            }
-          </div>
-        )}
-        
-        {/* Top left badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {isTrending && (
-            <span className="bg-primary text-white text-xs px-2 py-1 rounded-md font-medium">Trending</span>
-          )}
-          
-          {/* Display first genre as a badge */}
-          {movie.genres && movie.genres.length > 0 && movie.genres[0].name !== "Loading..." && (
-            <span className="bg-[rgba(0,0,0,0.7)] text-white text-xs px-2 py-1 rounded-md font-medium">
-              {movie.genres[0].name}
-            </span>
-          )}
-        </div>
-        
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#0f1535] to-transparent">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <Star className="w-4 h-4 text-yellow-400 mr-1" />
-              <span className="text-white text-sm font-medium">
-                {movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}
+    <div className="rounded-xl overflow-hidden bg-[rgba(26,32,55,0.8)] backdrop-blur-md border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-300 group">
+      <Link to={`/${movie.mediaType}/${movie.id}`} className="block">
+        <div className="relative aspect-[2/3]">
+          <img 
+            src={posterUrl} 
+            alt={movie.title} 
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="eager"
+            decoding="async"
+            key={`${movie.id}-${imageKey}`}
+          />
+          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-medium text-white bg-[rgba(0,0,0,0.5)] px-2 py-1 rounded">
+                {movie.mediaType === 'movie' ? 'Movie' : 'TV Show'}
               </span>
-            </div>
-            <div className="text-xs text-white bg-[rgba(15,21,53,0.6)] px-2 py-1 rounded">
-              {movie.release_date 
-                ? new Date(movie.release_date).getFullYear() 
-                : movie.first_air_date 
-                  ? new Date(movie.first_air_date).getFullYear()
-                  : 'N/A'
-              }
+              {movie.isFavorite && (
+                <span className="text-xs font-medium text-white bg-[rgba(0,0,0,0.5)] px-2 py-1 rounded flex items-center gap-1">
+                  <Heart className="h-3 w-3 text-red-500" />
+                  Favorite
+                </span>
+              )}
             </div>
           </div>
         </div>
-      </div>
-      
-      <div className="p-4">
-        <h3 className="text-white font-semibold text-lg mb-1 truncate">
-          {movie.title || movie.name}
-        </h3>
-        <p className="text-[#A0AEC0] text-sm mb-3 truncate">
-          {movie.genres?.map(g => g.name).join(', ') || 'Unknown genre'}
-        </p>
-        
-        <div className="flex justify-between items-center">
-          <Link 
-            href={`/${movie.mediaType}/${movie.id}`}
-            className="text-primary hover:text-blue-400 text-sm font-medium flex items-center"
-          >
-            <ExternalLink className="w-4 h-4 mr-1" /> Details
-          </Link>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="text-[#A0AEC0] hover:text-white text-sm p-0"
-            onClick={() => toggleFavorite.mutate()}
-            disabled={!user || toggleFavorite.isPending}
-          >
-            <Heart className={`w-4 h-4 mr-1 ${movie.isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-            {movie.isFavorite ? 'Saved' : 'Save'}
-          </Button>
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-white mb-1 line-clamp-1">{movie.title}</h3>
+          <p className="text-sm text-[#A0AEC0] mb-3 line-clamp-2">{movie.overview}</p>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-1 text-sm text-[#A0AEC0]">
+              <Calendar className="h-4 w-4" />
+              <span>{releaseDate}</span>
+            </div>
+            <div className="flex items-center gap-1 text-sm text-[#A0AEC0]">
+              <Star className="h-4 w-4 text-yellow-500" />
+              <span>{rating}</span>
+            </div>
+          </div>
         </div>
-      </div>
+      </Link>
     </div>
   );
 }

@@ -67,9 +67,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/discover/movie", async (req, res) => {
     try {
       const genreQuery = req.query.with_genres ? `&with_genres=${req.query.with_genres}` : "";
-      const response = await axios.get(
-        `${TMDB_API_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}${genreQuery}`
-      );
+      const page = parseInt(req.query.page as string) || 1;
+      const requestId = req.query.requestId || 'no-request-id';
+      
+      console.log(`Fetching movies page ${page} with requestId ${requestId}${genreQuery ? ` with genres ${req.query.with_genres}` : ''}`);
+      
+      // Add cache control headers to prevent browser caching
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
+      // According to TMDB API docs, page parameter should be between 1 and 1000
+      const validPage = Math.max(1, Math.min(1000, page));
+      
+      const url = `${TMDB_API_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}${genreQuery}&page=${validPage}&sort_by=popularity.desc`;
+      console.log(`TMDB API URL: ${url.replace(TMDB_API_KEY, 'API_KEY_HIDDEN')}`);
+      
+      const response = await axios.get(url, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      console.log(`Received ${response.data.results.length} movies for page ${validPage} with requestId ${requestId}`);
+      console.log(`Total pages: ${response.data.total_pages}, Current page: ${response.data.page}`);
+      
+      // Log the first few movie IDs to verify they're different
+      if (response.data.results.length > 0) {
+        console.log(`First 3 movie IDs: ${response.data.results.slice(0, 3).map((m: any) => m.id).join(', ')}`);
+      }
+      
+      // Add the requestId to the response for debugging
+      response.data.requestId = requestId;
+      
       res.json(response.data);
     } catch (error) {
       console.error("Error discovering movies:", error);
@@ -80,9 +112,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/discover/tv", async (req, res) => {
     try {
       const genreQuery = req.query.with_genres ? `&with_genres=${req.query.with_genres}` : "";
-      const response = await axios.get(
-        `${TMDB_API_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}${genreQuery}`
-      );
+      const page = parseInt(req.query.page as string) || 1;
+      const requestId = req.query.requestId || 'no-request-id';
+      
+      console.log(`Fetching TV shows page ${page} with requestId ${requestId}${genreQuery ? ` with genres ${req.query.with_genres}` : ''}`);
+      
+      // Add cache control headers to prevent browser caching
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
+      // According to TMDB API docs, page parameter should be between 1 and 1000
+      const validPage = Math.max(1, Math.min(1000, page));
+      
+      const url = `${TMDB_API_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}${genreQuery}&page=${validPage}&sort_by=popularity.desc`;
+      console.log(`TMDB API URL: ${url.replace(TMDB_API_KEY, 'API_KEY_HIDDEN')}`);
+      
+      const response = await axios.get(url, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      console.log(`Received ${response.data.results.length} TV shows for page ${validPage} with requestId ${requestId}`);
+      console.log(`Total pages: ${response.data.total_pages}, Current page: ${response.data.page}`);
+      
+      // Log the first few TV show IDs to verify they're different
+      if (response.data.results.length > 0) {
+        console.log(`First 3 TV show IDs: ${response.data.results.slice(0, 3).map((m: any) => m.id).join(', ')}`);
+      }
+      
+      // Add the requestId to the response for debugging
+      response.data.requestId = requestId;
+      
       res.json(response.data);
     } catch (error) {
       console.error("Error discovering TV shows:", error);

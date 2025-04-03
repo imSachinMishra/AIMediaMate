@@ -86,7 +86,7 @@ export function mapMovieData(
     vote_average: item.vote_average,
     release_date: item.release_date,
     first_air_date: item.first_air_date,
-    genres,
+    genres: genres.length > 0 ? genres : undefined,
     mediaType,
     isFavorite,
     providers: uniqueProviders,

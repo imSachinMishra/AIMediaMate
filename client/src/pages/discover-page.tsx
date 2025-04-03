@@ -1,14 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRoute } from "wouter";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import MovieCard from "@/components/MovieCard";
-import { Skeleton } from "@/components/ui/skeleton";
+import MovieCardSkeleton from "@/components/MovieCardSkeleton";
 import { mapMovieData } from "@/lib/utils";
 import { Movie } from "@/types/movie";
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+
+interface DiscoverResponse {
+  results: any[];
+  total_pages: number;
+  total_results: number;
+}
 
 // Generate a random string for cache busting
 function generateRandomString(length = 10) {
@@ -20,42 +25,39 @@ function generateRandomString(length = 10) {
   return result;
 }
 
-export default function GenrePage() {
-  // Get genre ID and media type from URL
-  const [match, params] = useRoute('/genre/:id');
-  const genreId = params?.id;
-  const searchParams = new URLSearchParams(window.location.search);
-  const mediaType = searchParams.get('mediaType') || 'movie';
-  
+export default function DiscoverPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+  const mediaType = 'movie'; // Default to movies
+  
+  // State for discover data
+  const [discoverData, setDiscoverData] = useState<DiscoverResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [timestamp, setTimestamp] = useState(generateRandomString());
   const [requestId, setRequestId] = useState(generateRandomString(20));
   
-  // State for discover data
-  const [discoverData, setDiscoverData] = useState<{ results: any[], total_pages: number, total_results: number } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Fetch genre details
+  // Fetch genre data for mapping
   const { data: genresData } = useQuery<{ genres: any[] }>({
-    queryKey: [`/api/genres/${mediaType}`],
+    queryKey: ['/api/genres/movie'],
   });
+
+  // Create a genre map for quick lookups
+  const genreMap: Record<number, string> = {};
+  if (genresData?.genres) {
+    genresData.genres.forEach(genre => {
+      genreMap[genre.id] = genre.name;
+    });
+  }
   
-  // Find the current genre
-  const currentGenre = genresData?.genres?.find(g => g.id.toString() === genreId);
-  
-  // Fetch movies/shows of this genre directly with useEffect
+  // Fetch movies directly with useEffect
   useEffect(() => {
     const fetchMovies = async () => {
-      if (!genreId) return;
-      
       setIsLoading(true);
       setError(null);
       try {
-        console.log(`Fetching page ${currentPage} of ${mediaType} with genre ${genreId} and requestId ${requestId}`);
-        // Add timestamp to prevent caching
-        const url = `/api/discover/${mediaType}?with_genres=${genreId}&page=${currentPage}&v=${timestamp}&requestId=${requestId}`;
+        console.log(`Fetching page ${currentPage} of movies with requestId ${requestId}`);
+        const url = `/api/discover/${mediaType}?page=${currentPage}&v=${timestamp}&requestId=${requestId}`;
         console.log(`Client fetch URL: ${url}`);
         
         const response = await fetch(url, {
@@ -72,7 +74,7 @@ export default function GenrePage() {
         }
         
         const data = await response.json();
-        console.log(`Received ${data.results.length} ${mediaType}s for page ${currentPage}`);
+        console.log(`Received ${data.results.length} movies for page ${currentPage}`);
         console.log(`Total pages: ${data.total_pages}, Current page: ${data.page}`);
         
         // Log the first few movie IDs to verify they're different
@@ -100,7 +102,7 @@ export default function GenrePage() {
     };
     
     fetchMovies();
-  }, [currentPage, mediaType, genreId, timestamp, requestId]);
+  }, [currentPage, mediaType, timestamp, requestId]);
   
   // Fetch user favorites to mark favorite movies
   const { data: favorites } = useQuery<any[]>({
@@ -109,14 +111,15 @@ export default function GenrePage() {
   
   // Map movies data to our Movie type
   const movies: Movie[] = discoverData?.results
-    ? discoverData.results.map(movie => 
-        mapMovieData(movie, favorites, mediaType as 'movie' | 'tv')
+    ? discoverData.results.map((movie: any) => 
+        mapMovieData(movie, favorites, mediaType as 'movie' | 'tv', genreMap)
       )
     : [];
   
   // Handle pagination
   const handlePrevPage = () => {
     if (currentPage > 1) {
+      console.log(`Navigating to previous page ${currentPage - 1}`);
       setCurrentPage(prev => prev - 1);
       setTimestamp(generateRandomString()); // Update timestamp to force refresh
       setRequestId(generateRandomString(20)); // Generate a new request ID
@@ -125,6 +128,7 @@ export default function GenrePage() {
   
   const handleNextPage = () => {
     if (discoverData && currentPage < discoverData.total_pages) {
+      console.log(`Navigating to next page ${currentPage + 1}`);
       setCurrentPage(prev => prev + 1);
       setTimestamp(generateRandomString()); // Update timestamp to force refresh
       setRequestId(generateRandomString(20)); // Generate a new request ID
@@ -137,13 +141,13 @@ export default function GenrePage() {
       
       <main className="flex-1 p-4 md:p-8">
         <Header 
-          title={currentGenre?.name || 'Genre'} 
-          subtitle={`Explore ${mediaType === 'movie' ? 'movies' : 'TV shows'} in this category`} 
+          title="Discover Movies" 
+          subtitle="Explore our collection of movies" 
         />
         
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white mb-2">
-            {currentGenre?.name || 'Loading...'} {mediaType === 'movie' ? 'Movies' : 'TV Shows'}
+            All Movies
           </h2>
           <p className="text-[#A0AEC0]">
             {isLoading 
@@ -151,22 +155,22 @@ export default function GenrePage() {
               : error
                 ? error
                 : movies.length > 0 
-                  ? `Found ${discoverData?.total_results || 0} titles in this category (Page ${currentPage} of ${discoverData?.total_pages || 1})` 
-                  : 'No titles found in this category'
+                  ? `Found ${discoverData?.total_results || 0} movies (Page ${currentPage} of ${discoverData?.total_pages || 1})` 
+                  : 'No movies found'
             }
           </p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6" key={`genre-grid-${currentPage}-${timestamp}`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6" key={`movie-grid-${currentPage}-${timestamp}`}>
           {isLoading ? (
             // Show skeletons while loading
-            Array(12).fill(null).map((_, i) => (
+            Array(20).fill(null).map((_, i) => (
               <MovieCardSkeleton key={i} />
             ))
           ) : error ? (
             // Show error state
             <div className="col-span-full py-12 text-center">
-              <h3 className="text-xl font-medium text-white mb-2">Error loading titles</h3>
+              <h3 className="text-xl font-medium text-white mb-2">Error loading movies</h3>
               <p className="text-[#A0AEC0]">
                 {error}
               </p>
@@ -179,9 +183,9 @@ export default function GenrePage() {
           ) : (
             // Show empty state
             <div className="col-span-full py-12 text-center">
-              <h3 className="text-xl font-medium text-white mb-2">No titles found</h3>
+              <h3 className="text-xl font-medium text-white mb-2">No movies found</h3>
               <p className="text-[#A0AEC0]">
-                We couldn't find any titles in this category. Try another genre or check back later.
+                We couldn't find any movies. Please check back later.
               </p>
             </div>
           )}
@@ -216,28 +220,4 @@ export default function GenrePage() {
       </main>
     </div>
   );
-}
-
-function MovieCardSkeleton() {
-  return (
-    <div className="rounded-xl overflow-hidden bg-[rgba(26,32,55,0.8)] backdrop-blur-md border border-[rgba(255,255,255,0.05)]">
-      <div className="relative aspect-[2/3]">
-        <Skeleton className="w-full h-full" />
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <div className="flex justify-between items-center">
-            <Skeleton className="h-5 w-12" />
-            <Skeleton className="h-5 w-10" />
-          </div>
-        </div>
-      </div>
-      <div className="p-4">
-        <Skeleton className="h-6 w-full mb-2" />
-        <Skeleton className="h-4 w-2/3 mb-4" />
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-20" />
-          <Skeleton className="h-8 w-16" />
-        </div>
-      </div>
-    </div>
-  );
-}
+} 

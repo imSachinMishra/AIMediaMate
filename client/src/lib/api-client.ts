@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: window.location.hostname === 'localhost' ? 'http://localhost:3000' : '',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -38,12 +38,10 @@ apiClient.interceptors.response.use(
       console.warn(`Non-JSON response received: ${contentType}`);
     }
 
-    if (response.config.url?.includes('/auth/login')) {
-      const token = response.data?.token || response.data?.accessToken;
-      if (token) {
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('isAuthenticated', 'true');
-      }
+    if (response.config.url?.includes('/login')) {
+      // For login, we need to set the authentication state
+      // The server doesn't return a token, it uses session cookies
+      localStorage.setItem('isAuthenticated', 'true');
     }
     return response;
   },
