@@ -86,7 +86,7 @@ export default function Sidebar() {
         
         {isLoadingMovieGenres ? (
           // Skeleton loaders for genres
-          Array(4).fill(null).map((_, i) => (
+          Array(15).fill(null).map((_, i) => (
             <div key={i} className="flex items-center px-3 py-3">
               <Skeleton className="w-5 h-5 mr-3" />
               <Skeleton className="h-4 w-24" />
@@ -94,7 +94,7 @@ export default function Sidebar() {
           ))
         ) : (
           // Actual genre links
-          movieGenres?.genres.slice(0, 6).map((genre) => (
+          movieGenres?.genres.slice(0, 15).map((genre) => (
             <Button 
               key={genre.id}
               variant="ghost" 

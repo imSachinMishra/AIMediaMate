@@ -56,7 +56,7 @@ export default function HomePage() {
 
   // Prepare genre cards data
   const genreCards = genresData?.genres
-    ? genresData.genres.slice(0, 4).map(genre => ({
+    ? genresData.genres.slice(0, 12).map(genre => ({
         id: genre.id,
         name: genre.name,
         // Simulate count based on genre id
@@ -114,7 +114,7 @@ export default function HomePage() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {isLoadingGenres
-              ? Array(4).fill(null).map((_, i) => (
+              ? Array(8).fill(null).map((_, i) => (
                   <GenreCardSkeleton key={i} />
                 ))
               : genreCards.map((genre) => (
