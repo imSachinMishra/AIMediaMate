@@ -47,7 +47,7 @@ export default function MovieCard({ movie, isTrending = false, timestamp }: Movi
   const addToFavoritesMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/favorites", { 
-        tmdbId: movie.id,
+        tmdbId: Number(movie.id),
         mediaType: movie.mediaType
       });
     },
