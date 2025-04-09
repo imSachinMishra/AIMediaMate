@@ -63,48 +63,37 @@ export function getQueryFn(options: QueryFnOptions = {}): QueryFunction {
   };
 }
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<AxiosResponse> {
-  if (url.includes("/register") && data && typeof data === "object") {
-    const { username } = data as { username?: string };
-    console.log("Register Data (Before API Call):", data); // Debug log to inspect the data object
-    if (!username || username.trim() === "") {
-      console.error("Error: Username is empty or invalid."); // Log error for debugging
-      throw new Error("Username is required and cannot be empty.");
-    }
-  }
+export async function apiRequest(method: string, url: string, data?: any) {
+  try {
+    const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
+    
+    // Add timestamp to prevent caching
+    const separator = fullUrl.includes('?') ? '&' : '?';
+    const timestampedUrl = `${fullUrl}${separator}_t=${Date.now()}`;
+    
+    console.log('Making API request:', {
+      method,
+      url: timestampedUrl,
+      hasData: !!data
+    });
 
-  // Ensure URL has the base URL
-  let fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
-  
-  // If data is an object and method is GET, convert it to query parameters
-  if (method === 'GET' && data && typeof data === 'object') {
-    const queryParams = new URLSearchParams();
-    Object.entries(data as Record<string, any>).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        queryParams.append(key, String(value));
+    const response = await axios({
+      method,
+      url: timestampedUrl,
+      data,
+      withCredentials: true,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
-    const queryString = queryParams.toString();
-    if (queryString) {
-      fullUrl += `${fullUrl.includes('?') ? '&' : '?'}${queryString}`;
+
+    return response;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      throw new Error("Unauthorized");
     }
-    data = undefined; // Clear data since we've added it to the URL
+    throw error;
   }
-
-  console.log('Making API request:', {
-    method,
-    url: fullUrl,
-    hasData: !!data
-  });
-
-  return await axios({
-    method,
-    url: fullUrl,
-    data,
-    withCredentials: true,
-  });
 }

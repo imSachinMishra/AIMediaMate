@@ -6,16 +6,41 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { mapMovieData } from "@/lib/utils";
 import { Movie } from "@/types/movie";
 import { Info } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
 
 export default function SearchPage() {
   // Get search query from URL
   const searchParams = new URLSearchParams(window.location.search);
   const query = searchParams.get('q') || '';
+  const [searchResults, setSearchResults] = useState<Movie[]>([]);
   
   // Fetch search results
-  const { data: searchData, isLoading } = useQuery<{ results: any[] }>({
+  const { data: searchData, isLoading, error } = useQuery<{ results: any[] }>({
     queryKey: [`/api/search/multi`, { query }],
+    queryFn: async () => {
+      if (!query) return { results: [] };
+      console.log(`[DEBUG] Searching for: "${query}"`);
+      try {
+        const response = await apiRequest('GET', `/api/search/multi?query=${encodeURIComponent(query)}`);
+        console.log(`[DEBUG] Search response:`, {
+          status: response.status,
+          statusText: response.statusText,
+          totalResults: response.data.total_results,
+          totalPages: response.data.total_pages,
+          resultsCount: response.data.results?.length || 0
+        });
+        return response.data;
+      } catch (error) {
+        console.error('[ERROR] Search failed:', error);
+        throw error;
+      }
+    },
     enabled: !!query,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    retry: false,
+    gcTime: 0,
   });
   
   // Fetch user favorites to mark favorite movies
@@ -23,15 +48,43 @@ export default function SearchPage() {
     queryKey: ['/api/favorites'],
   });
   
-  // Map search results to our Movie type
-  const searchResults: Movie[] = searchData?.results
-    ? searchData.results.map(item => {
+  // Update search results when data changes
+  useEffect(() => {
+    if (searchData?.results) {
+      const mappedResults = searchData.results.map(item => {
         const mediaType = item.media_type === 'movie' || item.media_type === 'tv' 
           ? item.media_type 
           : 'movie';
         return mapMovieData(item, favorites, mediaType);
-      })
-    : [];
+      });
+      setSearchResults(mappedResults);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchData, favorites]);
+  
+  // Show error message if search failed
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col md:flex-row bg-[#0f1535]">
+        <Sidebar />
+        <main className="flex-1 p-4 md:p-8">
+          <Header 
+            title="Search Error" 
+            subtitle="An error occurred while searching" 
+          />
+          <div className="col-span-full text-center py-12">
+            <Info className="mx-auto w-16 h-16 text-[#A0AEC0] mb-3" />
+            <h3 className="text-xl text-white font-medium mb-2">Search Failed</h3>
+            <p className="text-[#A0AEC0]">
+              We encountered an error while searching for "{query}".<br />
+              Please try again later.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#0f1535]">
@@ -40,7 +93,7 @@ export default function SearchPage() {
       <main className="flex-1 p-4 md:p-8">
         <Header 
           title="Search Results" 
-          subtitle={`Results for "${query}"`} 
+          subtitle={query ? `Results for "${query}"` : "Enter a search term"} 
         />
         
         <div className="mb-6">
@@ -52,10 +105,13 @@ export default function SearchPage() {
               ))
             ) : searchResults.length > 0 ? (
               // Show search results
-              searchResults.map((item) => (
-                <MovieCard key={item.id} movie={item} />
+              searchResults.map(movie => (
+                <MovieCard 
+                  key={`${movie.id}-${movie.mediaType}`} 
+                  movie={movie}
+                />
               ))
-            ) : (
+            ) : query ? (
               // Show message if no results
               <div className="col-span-full text-center py-12">
                 <Info className="mx-auto w-16 h-16 text-[#A0AEC0] mb-3" />
@@ -63,6 +119,15 @@ export default function SearchPage() {
                 <p className="text-[#A0AEC0]">
                   We couldn't find any movies or TV shows matching "{query}".<br />
                   Try a different search term.
+                </p>
+              </div>
+            ) : (
+              // Show initial state
+              <div className="col-span-full text-center py-12">
+                <Info className="mx-auto w-16 h-16 text-[#A0AEC0] mb-3" />
+                <h3 className="text-xl text-white font-medium mb-2">Search for movies and TV shows</h3>
+                <p className="text-[#A0AEC0]">
+                  Use the search bar to find your favorite movies and TV shows.
                 </p>
               </div>
             )}

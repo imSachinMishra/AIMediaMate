@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/tmdb";
 import { formatDate, formatGenres, formatRating } from "@/lib/utils";
@@ -19,26 +19,22 @@ interface MovieCardProps {
   timestamp?: string;
 }
 
-// Function to generate a random string for cache busting
-function generateRandomString(length = 10) {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
-}
-
 export default function MovieCard({ movie, isTrending = false, timestamp }: MovieCardProps) {
   const { toast: useToastToast } = useToast();
   const { user } = useAuth();
-  const [imageKey, setImageKey] = useState(generateRandomString());
   const queryClient = useQueryClient();
+  const [imageError, setImageError] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
   
-  // Update imageKey when movie ID or poster path changes
+  // Reset image error state when movie changes
   useEffect(() => {
-    setImageKey(generateRandomString());
-  }, [movie.id, movie.poster_path, timestamp]);
+    setImageError(false);
+    if (imageRef.current) {
+      imageRef.current.src = movie.poster_path 
+        ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}`
+        : '';
+    }
+  }, [movie.id, movie.mediaType, movie.poster_path]);
   
   const formattedDate = formatDate(movie.release_date);
   const formattedGenres = formatGenres(movie.genres);
@@ -70,6 +66,7 @@ export default function MovieCard({ movie, isTrending = false, timestamp }: Movi
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites/details"] });
       toast.success("Removed from favorites", {
         description: "Movie removed from your favorites",
       });
@@ -89,11 +86,6 @@ export default function MovieCard({ movie, isTrending = false, timestamp }: Movi
     }
   };
 
-  // Get poster URL with cache busting
-  const posterUrl = movie.poster_path 
-    ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}?v=${imageKey}`
-    : null;
-  
   // Map providers to their icons
   const providers = movie.providers || [];
   
@@ -101,14 +93,15 @@ export default function MovieCard({ movie, isTrending = false, timestamp }: Movi
     <div className="group relative overflow-hidden rounded-lg bg-card transition-all hover:shadow-lg">
       <Link to={`/${movie.mediaType}/${movie.id}`} className="block">
         <div className="aspect-[2/3] w-full overflow-hidden">
-          {posterUrl ? (
+          {movie.poster_path && !imageError ? (
             <img 
-              src={posterUrl} 
+              ref={imageRef}
+              src={`${TMDB_IMAGE_BASE_URL}${movie.poster_path}`}
               alt={movie.title} 
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               loading="eager"
               decoding="async"
-              key={`${movie.id}-${imageKey}`}
+              onError={() => setImageError(true)}
             />
           ) : (
             <DefaultPoster movie={movie} />

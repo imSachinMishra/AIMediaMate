@@ -16,6 +16,33 @@ import MovieCard from "@/components/MovieCard";
 import { mapMovieData } from "@/lib/utils";
 import { Movie } from "@/types/movie";
 
+interface MovieDetails {
+  id: number;
+  title?: string;
+  name?: string;
+  poster_path?: string;
+  tagline?: string;
+  genres?: Array<{ id: number; name: string }>;
+  vote_average?: number;
+  vote_count?: number;
+  release_date?: string;
+  first_air_date?: string;
+  'watch/providers'?: {
+    results?: {
+      US?: {
+        flatrate?: any[];
+      };
+    };
+  };
+  overview?: string;
+  runtime?: number;
+  homepage?: string;
+}
+
+interface SimilarResults {
+  results: any[];
+}
+
 export default function MovieDetails() {
   // Get movie/tv ID from URL
   const [matchMovie, movieParams] = useRoute('/movie/:id');
@@ -24,29 +51,45 @@ export default function MovieDetails() {
   const id = movieParams?.id || tvParams?.id;
   const mediaType = matchMovie ? 'movie' : 'tv';
   
+  if (!id) {
+    return <div>No ID provided</div>;
+  }
+
+  const numericId = parseInt(id);
+  if (isNaN(numericId)) {
+    return <div>Invalid ID provided</div>;
+  }
+
   const { toast } = useToast();
   const { user } = useAuth();
   
   // Fetch movie/TV details
-  const { data: details, isLoading } = useQuery<any>({
-    queryKey: [`/api/${mediaType}/${id}`],
+  const { data: details, isLoading } = useQuery<MovieDetails>({
+    queryKey: [`/api/${mediaType}/${numericId}`] as const,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
   
   // Fetch similar titles
-  const { data: similarData, isLoading: isLoadingSimilar } = useQuery<{ results: any[] }>({
-    queryKey: [`/api/${mediaType}/${id}/similar`],
-    // This endpoint doesn't exist in our API yet, but we'd add it
-    enabled: !!id,
+  const { data: similarData, isLoading: isLoadingSimilar } = useQuery<SimilarResults>({
+    queryKey: [`/api/${mediaType}/${numericId}/similar`] as const,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    enabled: !!numericId,
   });
   
   // Fetch user favorites to check if this item is a favorite
   const { data: favorites } = useQuery<any[]>({
-    queryKey: ['/api/favorites'],
+    queryKey: ['/api/favorites'] as const,
   });
   
   // Check if this movie/show is a favorite
   const isFavorite = favorites?.some(
-    fav => fav.tmdbId === parseInt(id || '0') && fav.mediaType === mediaType
+    fav => fav.tmdbId === numericId && fav.mediaType === mediaType
   );
   
   // Get providers (streaming platforms)
@@ -56,18 +99,18 @@ export default function MovieDetails() {
   const toggleFavorite = useMutation({
     mutationFn: async () => {
       if (isFavorite) {
-        await apiRequest("DELETE", `/api/favorites/${id}`);
+        await apiRequest("DELETE", `/api/favorites/${numericId}`);
         return false;
       } else {
         await apiRequest("POST", "/api/favorites", { 
-          tmdbId: parseInt(id || '0'),
+          tmdbId: numericId,
           mediaType
         });
         return true;
       }
     },
     onSuccess: (added) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/favorites'] as const });
       toast({
         title: added ? 'Added to favorites' : 'Removed from favorites',
         description: added 
@@ -87,7 +130,7 @@ export default function MovieDetails() {
   // Map similar titles to our Movie type
   const similarTitles: Movie[] = similarData?.results
     ? similarData.results.slice(0, 4).map(item => 
-        mapMovieData(item, favorites, mediaType as 'movie' | 'tv')
+        mapMovieData(item, favorites || [], mediaType as 'movie' | 'tv')
       )
     : [];
   
@@ -125,11 +168,18 @@ export default function MovieDetails() {
                   <div className="rounded-xl overflow-hidden">
                     <img 
                       src={details?.poster_path 
-                        ? `https://image.tmdb.org/t/p/w500${details.poster_path}`
+                        ? `https://image.tmdb.org/t/p/w500${details.poster_path}?v=${Date.now()}`
                         : `https://via.placeholder.com/500x750?text=No+Poster`
                       } 
                       alt={details?.title || details?.name}
                       className="w-full object-cover"
+                      key={`${details?.id}-${Date.now()}`}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (details?.poster_path) {
+                          target.src = `https://image.tmdb.org/t/p/w500${details.poster_path}?v=${Date.now()}`;
+                        }
+                      }}
                     />
                   </div>
                 </div>

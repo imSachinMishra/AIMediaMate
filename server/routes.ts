@@ -15,6 +15,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
 
+  // Add cache control headers middleware
+  app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    next();
+  });
+
   // TMDB API Proxy routes
   // This helps us not expose our API key on the frontend
   app.get("/api/movies/trending", async (req, res) => {
@@ -226,15 +234,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[DEBUG] Searching for: "${query}"`);
       
-      const response = await axios.get(
-        `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query as string)}`
-      );
+      // Add timestamp to prevent caching
+      const timestamp = Date.now();
+      const url = `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query as string)}&_t=${timestamp}`;
       
-      console.log(`[DEBUG] Found ${response.data.results?.length || 0} results`);
+      console.log(`[DEBUG] TMDB API URL: ${url.replace(TMDB_API_KEY, 'API_KEY_HIDDEN')}`);
+      
+      const response = await axios.get(url, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      console.log(`[DEBUG] TMDB API Response:`, {
+        status: response.status,
+        statusText: response.statusText,
+        totalResults: response.data.total_results,
+        totalPages: response.data.total_pages,
+        resultsCount: response.data.results?.length || 0
+      });
+      
+      if (response.data.results?.length > 0) {
+        console.log(`[DEBUG] First result:`, response.data.results[0]);
+      }
       
       res.json(response.data);
     } catch (error) {
       console.error("Error searching:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("[ERROR] Axios error details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        });
+      }
       res.status(500).json({ message: "Failed to search" });
     }
   });
@@ -465,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   };
                 } catch (error) {
                   console.error(`Error fetching details for "${rec.title}":`, error);
-                  return {
+          return {
                     id: rec.id || Math.random().toString(36).substring(2, 9),
                     title: rec.title,
                     overview: rec.description,

@@ -39,29 +39,28 @@ export function formatRating(rating?: number): string {
 // Map genre names to appropriate images
 export function getGenreImages(genreName: string): string {
   const genreImageMap: Record<string, string> = {
-    "Action": "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Adventure": "https://images.unsplash.com/photo-1604537466573-5e94508fd243?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Animation": "https://images.unsplash.com/photo-1546776310-eef45dd6d63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Comedy": "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Crime": "https://images.unsplash.com/photo-1605806616950-13781e9f5033?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Documentary": "https://images.unsplash.com/photo-1616432043562-3e119c44bff1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Drama": "https://images.unsplash.com/photo-1611523552729-91f96c63fc3a?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Family": "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Fantasy": "https://images.unsplash.com/photo-1578674473215-9e07ee2e577d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "History": "https://images.unsplash.com/photo-1461360370896-922624d12aa1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Horror": "https://images.unsplash.com/photo-1604248233487-899429b9e031?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Music": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Mystery": "https://images.unsplash.com/photo-1606819717115-9159c900370b?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Romance": "https://images.unsplash.com/photo-1517230878791-4d28214057c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Science Fiction": "https://images.unsplash.com/photo-1605806616950-13781e9f5033?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Sci-Fi": "https://images.unsplash.com/photo-1605806616950-13781e9f5033?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "TV Movie": "https://images.unsplash.com/photo-1616530940355-351fabd9524b?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Thriller": "https://images.unsplash.com/photo-1513384312027-9fa69a360337?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "War": "https://images.unsplash.com/photo-1562651139-de5f505894b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-    "Western": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
+    "Action": "https://images.unsplash.com/photo-1508807526345-15e9b5f4eaff?w=500&h=300&fit=crop",
+    "Adventure": "https://images.unsplash.com/photo-1520116468816-95b69f847357?w=500&h=300&fit=crop",
+    "Animation": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&h=300&fit=crop",
+    "Comedy": "https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=500&h=300&fit=crop",
+    "Crime": "https://images.unsplash.com/photo-1453873531674-2151bcd01707?w=500&h=300&fit=crop",
+    "Documentary": "https://images.unsplash.com/photo-1492724724894-7464c27d0ceb?w=500&h=300&fit=crop",
+    "Drama": "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=500&h=300&fit=crop",
+    "Family": "https://images.unsplash.com/photo-1536640712-4d4c36ff0e4e?w=500&h=300&fit=crop",
+    "Fantasy": "https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=500&h=300&fit=crop",
+    "History": "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=500&h=300&fit=crop",
+    "Horror": "https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=500&h=300&fit=crop",
+    "Music": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&h=300&fit=crop",
+    "Mystery": "https://images.unsplash.com/photo-1519822472072-ec86d5ab6f5c?w=500&h=300&fit=crop",
+    "Romance": "https://images.unsplash.com/photo-1518599807935-37015b9cefcb?w=500&h=300&fit=crop",
+    "Science Fiction": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&h=300&fit=crop",
+    "TV Movie": "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=500&h=300&fit=crop",
+    "Thriller": "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=500&h=300&fit=crop",
+    "War": "https://images.unsplash.com/photo-1514862203905-2b3bb16a79a3?w=500&h=300&fit=crop",
+    "Western": "https://images.unsplash.com/photo-1533167649158-6d508895b680?w=500&h=300&fit=crop",
   };
   
-  return genreImageMap[genreName] || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
+  return genreImageMap[genreName] || "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=500&h=300&fit=crop";
 }
 
 // Map API movie data to our Movie type

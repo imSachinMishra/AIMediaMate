@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface HeaderProps {
   title: string;
@@ -20,6 +21,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
   
   const searchMutation = useMutation({
     mutationFn: async (query: string) => {
@@ -31,6 +33,8 @@ export default function Header({ title, subtitle }: HeaderProps) {
       if (data && data.results && data.results.length > 0) {
         // Navigate to search results page
         navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+        // Clear the search input
+        setSearchQuery('');
       } else {
         toast({
           title: "No results found",
@@ -50,8 +54,10 @@ export default function Header({ title, subtitle }: HeaderProps) {
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      searchMutation.mutate(searchQuery);
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      // Perform the search
+      searchMutation.mutate(trimmedQuery);
     }
   };
   
