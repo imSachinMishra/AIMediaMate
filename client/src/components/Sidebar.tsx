@@ -2,9 +2,34 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import { Button } from './ui/button';
 import { 
-  Home, Compass, Heart, Video, Brain
+  Home, Compass, Heart, Video, Brain,
+  Sword, Skull, Drama, Laugh, Rocket,
+  Flame, Ghost, Music, Globe, Glasses,
+  Film, Wand2, LucideIcon
 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
+
+// Function to get appropriate icon for each genre
+const getGenreIcon = (genreName: string): LucideIcon => {
+  const icons: { [key: string]: LucideIcon } = {
+    'Action': Sword,
+    'Adventure': Compass,
+    'Animation': Wand2,
+    'Comedy': Laugh,
+    'Crime': Skull,
+    'Drama': Drama,
+    'Horror': Ghost,
+    'Romance': Heart,
+    'Science Fiction': Rocket,
+    'Thriller': Flame,
+    'Music': Music,
+    'Fantasy': Wand2,
+    'Mystery': Glasses,
+    'Western': Globe,
+  };
+  
+  return icons[genreName] || Film;
+};
 
 export default function Sidebar() {
   const [location] = useLocation();
@@ -94,23 +119,26 @@ export default function Sidebar() {
           ))
         ) : (
           // Actual genre links
-          movieGenres?.genres.slice(0, 15).map((genre) => (
-            <Button 
-              key={genre.id}
-              variant="ghost" 
-              className={`w-full justify-start px-3 py-3 rounded-lg group transition-all ${
-                isActive(`/genre/${genre.id}`) 
-                  ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary text-white' 
-                  : 'text-[#A0AEC0] hover:bg-[#1A2037]'
-              }`}
-              asChild
-            >
-              <Link href={`/genre/${genre.id}`}>
-                <Video className="w-5 h-5 mr-3" />
-                <span>{genre.name}</span>
-              </Link>
-            </Button>
-          ))
+          movieGenres?.genres.slice(0, 15).map((genre) => {
+            const GenreIcon = getGenreIcon(genre.name);
+            return (
+              <Button 
+                key={genre.id}
+                variant="ghost" 
+                className={`w-full justify-start px-3 py-3 rounded-lg group transition-all ${
+                  isActive(`/genre/${genre.id}`) 
+                    ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary text-white' 
+                    : 'text-[#A0AEC0] hover:bg-[#1A2037]'
+                }`}
+                asChild
+              >
+                <Link href={`/genre/${genre.id}`}>
+                  <GenreIcon className="w-5 h-5 mr-3" />
+                  <span>{genre.name}</span>
+                </Link>
+              </Button>
+            );
+          })
         )}
       </nav>
       

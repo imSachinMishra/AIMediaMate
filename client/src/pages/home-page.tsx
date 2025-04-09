@@ -88,18 +88,23 @@ export default function HomePage() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-            {isLoadingRecommended
-              ? Array(4).fill(null).map((_, i) => (
-                  <MovieCardSkeleton key={i} />
-                ))
-              : recommendedMovies.length > 0
-                ? recommendedMovies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} />
-                  ))
-                : trendingMovies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} />
-                  ))
-            }
+            {isLoadingRecommended ? (
+              Array(4).fill(null).map((_, i) => (
+                <MovieCardSkeleton key={i} />
+              ))
+            ) : recommendedMovies.length > 0 ? (
+              recommendedMovies.map((movie) => (
+                <MovieCard key={movie.id} movie={movie} />
+              ))
+            ) : trendingMovies.length > 0 ? (
+              trendingMovies.map((movie) => (
+                <MovieCard key={movie.id} movie={movie} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-gray-400">No recommendations available at the moment.</p>
+              </div>
+            )}
           </div>
         </section>
         
@@ -113,21 +118,26 @@ export default function HomePage() {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {isLoadingGenres
-              ? Array(8).fill(null).map((_, i) => (
-                  <GenreCardSkeleton key={i} />
-                ))
-              : genreCards.map((genre) => (
-                  <GenreCard
-                    key={genre.id}
-                    id={genre.id}
-                    name={genre.name}
-                    count={genre.count}
-                    imageUrl={genre.imageUrl}
-                    mediaType={genre.mediaType}
-                  />
-                ))
-            }
+            {isLoadingGenres ? (
+              Array(8).fill(null).map((_, i) => (
+                <GenreCardSkeleton key={i} />
+              ))
+            ) : genreCards.length > 0 ? (
+              genreCards.map((genre) => (
+                <GenreCard
+                  key={genre.id}
+                  id={genre.id}
+                  name={genre.name}
+                  count={genre.count}
+                  imageUrl={genre.imageUrl}
+                  mediaType={genre.mediaType}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-gray-400">No genres available at the moment.</p>
+              </div>
+            )}
           </div>
         </section>
         
@@ -141,14 +151,19 @@ export default function HomePage() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-            {isLoadingTrending
-              ? Array(4).fill(null).map((_, i) => (
-                  <MovieCardSkeleton key={i} />
-                ))
-              : trendingMovies.map((movie) => (
-                  <MovieCard key={movie.id} movie={movie} isTrending={true} />
-                ))
-            }
+            {isLoadingTrending ? (
+              Array(4).fill(null).map((_, i) => (
+                <MovieCardSkeleton key={i} />
+              ))
+            ) : trendingMovies.length > 0 ? (
+              trendingMovies.map((movie) => (
+                <MovieCard key={movie.id} movie={movie} isTrending={true} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-gray-400">No trending content available at the moment.</p>
+              </div>
+            )}
           </div>
         </section>
       </main>

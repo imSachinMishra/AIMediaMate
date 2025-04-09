@@ -24,7 +24,13 @@ export default function MovieCard({ movie, isTrending = false, timestamp }: Movi
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [imageError, setImageError] = useState(false);
+  const [isLocalFavorite, setIsLocalFavorite] = useState(movie.isFavorite);
   const imageRef = useRef<HTMLImageElement>(null);
+  
+  // Update local favorite state when movie prop changes
+  useEffect(() => {
+    setIsLocalFavorite(movie.isFavorite);
+  }, [movie.isFavorite]);
   
   // Reset image error state when movie changes
   useEffect(() => {
@@ -42,44 +48,74 @@ export default function MovieCard({ movie, isTrending = false, timestamp }: Movi
   
   const addToFavoritesMutation = useMutation({
     mutationFn: async () => {
+      if (!user) {
+        throw new Error("Must be logged in to add favorites");
+      }
       await apiRequest("POST", "/api/favorites", { 
         tmdbId: Number(movie.id),
         mediaType: movie.mediaType
       });
     },
     onSuccess: () => {
+      setIsLocalFavorite(true);
       queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites/details"] });
       toast.success("Added to favorites", {
-        description: "Movie added to your favorites",
+        description: `${movie.title || movie.name} added to your favorites`,
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      setIsLocalFavorite(movie.isFavorite); // Reset to original state
+      console.error("Error adding to favorites:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to add to favorites. Please try again.";
       toast.error("Error", {
-        description: "Failed to add to favorites",
+        description: errorMessage,
       });
     },
   });
 
   const removeFromFavoritesMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("DELETE", `/api/favorites/${movie.id}`);
+      if (!user) {
+        throw new Error("Must be logged in to remove favorites");
+      }
+      await apiRequest("DELETE", `/api/favorites/${movie.id}?mediaType=${movie.mediaType}`);
     },
     onSuccess: () => {
+      setIsLocalFavorite(false);
       queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
       queryClient.invalidateQueries({ queryKey: ["/api/favorites/details"] });
       toast.success("Removed from favorites", {
-        description: "Movie removed from your favorites",
+        description: `${movie.title || movie.name} removed from your favorites`,
       });
     },
-    onError: () => {
+    onError: (error) => {
+      setIsLocalFavorite(movie.isFavorite); // Reset to original state
+      console.error("Error removing from favorites:", error);
       toast.error("Error", {
-        description: "Failed to remove from favorites",
+        description: "Failed to remove from favorites. Please try again.",
       });
     },
   });
 
   const handleToggleFavorite = () => {
-    if (movie.isFavorite) {
+    if (!user) {
+      toast.error("Error", {
+        description: "Please log in to manage favorites",
+      });
+      return;
+    }
+
+    // Don't allow clicks while mutation is in progress
+    if (addToFavoritesMutation.isPending || removeFromFavoritesMutation.isPending) {
+      return;
+    }
+    
+    // Optimistically update the local state
+    const newFavoriteState = !isLocalFavorite;
+    setIsLocalFavorite(newFavoriteState);
+    
+    if (!newFavoriteState) {
       removeFromFavoritesMutation.mutate();
     } else {
       addToFavoritesMutation.mutate();
@@ -114,35 +150,48 @@ export default function MovieCard({ movie, isTrending = false, timestamp }: Movi
               {movie.overview}
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {formattedGenres.map((genre) => (
-                <span
-                  key={genre}
-                  className="rounded-full bg-primary/20 px-2 py-1 text-xs text-primary"
-                >
-                  {genre}
+              {formattedGenres.length > 0 ? (
+                formattedGenres.map((genre) => (
+                  <span
+                    key={genre}
+                    className="rounded-full bg-primary/20 px-2 py-1 text-xs text-primary"
+                  >
+                    {genre}
+                  </span>
+                ))
+              ) : (
+                <span className="rounded-full bg-gray-500/20 px-2 py-1 text-xs text-gray-400">
+                  {movie.mediaType === 'movie' ? 'Movie' : 'TV Show'}
                 </span>
-              ))}
+              )}
             </div>
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-sm text-gray-300">{formattedDate}</span>
-              <span className="rounded-full bg-primary/20 px-2 py-1 text-xs text-primary">
-                {formattedRating}
-              </span>
+              <span className="text-sm text-gray-300">{formattedDate || 'Release date TBA'}</span>
+              {formattedRating && (
+                <span className="rounded-full bg-primary/20 px-2 py-1 text-xs text-primary">
+                  {formattedRating}
+                </span>
+              )}
             </div>
           </div>
         </div>
       </Link>
       <button
         onClick={handleToggleFavorite}
-        className="absolute right-2 top-2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+        disabled={addToFavoritesMutation.isPending || removeFromFavoritesMutation.isPending}
+        className={`absolute right-2 top-2 rounded-full bg-black/50 p-2 text-white transition-colors ${
+          addToFavoritesMutation.isPending || removeFromFavoritesMutation.isPending 
+            ? 'cursor-not-allowed opacity-50' 
+            : 'hover:bg-black/70'
+        }`}
       >
-        {movie.isFavorite ? (
+        {isLocalFavorite ? (
           <HeartOff className="h-5 w-5 text-red-500" />
         ) : (
           <Heart className="h-5 w-5" />
         )}
       </button>
-      {movie.isFavorite && (
+      {isLocalFavorite && (
         <div className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-xs text-white">
           Favorite
         </div>

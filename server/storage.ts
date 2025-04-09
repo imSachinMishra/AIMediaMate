@@ -11,9 +11,9 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getFavorites(userId: number): Promise<Favorite[]>;
-  getFavorite(userId: number, tmdbId: number): Promise<Favorite | undefined>;
+  getFavorite(userId: number, tmdbId: number, mediaType: 'movie' | 'tv'): Promise<Favorite | undefined>;
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
-  removeFavorite(userId: number, tmdbId: number): Promise<void>;
+  removeFavorite(userId: number, tmdbId: number, mediaType: 'movie' | 'tv'): Promise<void>;
   sessionStore: session.Store;
 }
 
@@ -46,26 +46,39 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(favorites).where(eq(favorites.userId, userId));
   }
 
-  async getFavorite(userId: number, tmdbId: number): Promise<Favorite | undefined> {
+  async getFavorite(userId: number, tmdbId: number, mediaType: 'movie' | 'tv'): Promise<Favorite | undefined> {
     const [favorite] = await db.select().from(favorites).where(
       and(
         eq(favorites.userId, userId),
-        eq(favorites.tmdbId, tmdbId)
+        eq(favorites.tmdbId, tmdbId),
+        eq(favorites.mediaType, mediaType.toLowerCase())
       )
     );
     return favorite;
   }
 
   async addFavorite(insertFavorite: InsertFavorite): Promise<Favorite> {
+    // Check if favorite already exists
+    const existingFavorite = await this.getFavorite(
+      insertFavorite.userId,
+      insertFavorite.tmdbId,
+      insertFavorite.mediaType as 'movie' | 'tv'
+    );
+
+    if (existingFavorite) {
+      throw new Error("Already in favorites");
+    }
+
     const [favorite] = await db.insert(favorites).values(insertFavorite).returning();
     return favorite;
   }
 
-  async removeFavorite(userId: number, tmdbId: number): Promise<void> {
+  async removeFavorite(userId: number, tmdbId: number, mediaType: 'movie' | 'tv'): Promise<void> {
     await db.delete(favorites).where(
       and(
         eq(favorites.userId, userId),
-        eq(favorites.tmdbId, tmdbId)
+        eq(favorites.tmdbId, tmdbId),
+        eq(favorites.mediaType, mediaType)
       )
     );
   }

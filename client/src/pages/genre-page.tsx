@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import Header from "@/components/Header";
@@ -127,7 +127,7 @@ export default function GenrePage() {
   }, [genreDetailsError, genresError]);
 
   // Fetch user favorites to mark favorite movies
-  const { data: favorites } = useQuery({
+  const { data: favorites, isLoading: isLoadingFavorites } = useQuery({
     queryKey: ["/api/favorites"],
     queryFn: async () => {
       const response = await fetch("/api/favorites");
@@ -140,9 +140,13 @@ export default function GenrePage() {
   });
 
   // Map the movie data to include genre names and favorite status
-  const movies = genreData?.results.map((movie: any) => {
-    return mapMovieData(movie, favorites, 'movie', genreMap);
-  }) || [];
+  const movies = useMemo(() => {
+    if (!genreData?.results || isLoadingFavorites) return [];
+    
+    return genreData.results.map((movie: any) => {
+      return mapMovieData(movie, favorites, 'movie', genreMap);
+    });
+  }, [genreData?.results, favorites, genreMap, isLoadingFavorites]);
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
@@ -178,7 +182,7 @@ export default function GenrePage() {
               </div>
             )}
             
-            {isLoading ? (
+            {(isLoading || isLoadingFavorites) ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                 {Array.from({ length: 10 }).map((_, index) => (
                   <MovieCardSkeleton key={index} />

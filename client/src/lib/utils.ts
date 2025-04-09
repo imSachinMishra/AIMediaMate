@@ -24,7 +24,7 @@ export function formatDate(dateString?: string): string {
 
 // Format genres for display
 export function formatGenres(genres?: { id: number; name: string }[]): string[] {
-  if (!genres || genres.length === 0) return ["Unknown"];
+  if (!genres || genres.length === 0) return [];
   
   return genres.map(genre => genre.name);
 }
@@ -71,9 +71,11 @@ export function mapMovieData(
   genreMap?: Record<number, string>
 ): Movie {
   // Check if this movie is in user's favorites
-  const isFavorite = Array.isArray(favorites) ? favorites.some(
-    (fav) => fav.tmdbId === item.id && fav.mediaType === mediaType
-  ) : false;
+  const isFavorite = Array.isArray(favorites) && favorites.length > 0 
+    ? favorites.some(
+        (fav) => fav.tmdbId === item.id && fav.mediaType === mediaType
+      )
+    : false;
   
   // Map providers if available
   const providers = item['watch/providers']?.results?.US?.flatrate || [];
@@ -81,10 +83,12 @@ export function mapMovieData(
   // Map genres properly if we have genre IDs and a genre map
   let genres = item.genres || [];
   if (item.genre_ids && genreMap) {
-    genres = item.genre_ids.map((id: number) => ({ 
-      id, 
-      name: genreMap[id] || 'Unknown' 
-    }));
+    genres = item.genre_ids
+      .map((id: number) => {
+        const name = genreMap[id];
+        return name ? { id, name } : null;
+      })
+      .filter((genre: any) => genre !== null); // Remove any null entries
   }
   
   // For watch options, look in multiple places
@@ -107,14 +111,14 @@ export function mapMovieData(
   
   return {
     id: item.id,
-    title: mediaType === 'movie' ? item.title : undefined,
-    name: mediaType === 'tv' ? item.name : undefined,
+    title: mediaType === 'movie' ? item.title : item.name, // Use name as fallback for movies
+    name: mediaType === 'tv' ? item.name : item.title, // Use title as fallback for TV shows
     poster_path: item.poster_path,
     backdrop_path: item.backdrop_path,
     overview: item.overview,
     vote_average: item.vote_average,
-    release_date: item.release_date,
-    first_air_date: item.first_air_date,
+    release_date: item.release_date || item.first_air_date, // Use first_air_date as fallback
+    first_air_date: item.first_air_date || item.release_date, // Use release_date as fallback
     genres: genres.length > 0 ? genres : undefined,
     mediaType,
     isFavorite,

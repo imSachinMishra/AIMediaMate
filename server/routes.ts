@@ -709,7 +709,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Check if already in favorites
-      const existing = await storage.getFavorite(userId, favoriteData.tmdbId);
+      const existing = await storage.getFavorite(
+        userId, 
+        favoriteData.tmdbId, 
+        favoriteData.mediaType as 'movie' | 'tv'
+      );
       if (existing) {
         return res.status(400).json({ message: "Already in favorites" });
       }
@@ -733,12 +737,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as any).id;
       const tmdbId = parseInt(req.params.tmdbId);
+      const mediaType = req.query.mediaType as 'movie' | 'tv';
       
       if (isNaN(tmdbId)) {
         return res.status(400).json({ message: "Invalid ID" });
       }
       
-      await storage.removeFavorite(userId, tmdbId);
+      if (!mediaType || !['movie', 'tv'].includes(mediaType)) {
+        return res.status(400).json({ message: "Invalid media type" });
+      }
+      
+      await storage.removeFavorite(userId, tmdbId, mediaType);
       res.status(200).json({ message: "Favorite removed successfully" });
     } catch (error) {
       console.error("Error removing favorite:", error);
